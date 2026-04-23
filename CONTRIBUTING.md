@@ -38,6 +38,27 @@ Key packages:
 - For new language-level behaviour, update the knowledge base and both
   completion + hover + diagnostic tests as needed.
 
+## Project config (`.coraza.json`)
+
+User-facing configuration lives in `.coraza.json` at the workspace root. The
+schema is at [`schema/coraza.schema.json`](schema/coraza.schema.json); the
+loader is in [`internal/config`](internal/config); the `coraza-lsp init`
+subcommand lives in [`cmd/coraza-lsp/init.go`](cmd/coraza-lsp/init.go).
+
+**A note on the filename**: `.coraza.json` is short, obvious, and
+discoverable, but the name *could* collide with a hypothetical future Coraza
+WAF runtime config (rule layout, engines, audit log configuration). We
+accepted that risk knowingly — if the WAF project later wants the name for
+something else, renaming this file is a one-line `internal/config` change.
+Do not introduce runtime-Coraza-config semantics into this file.
+
+The VS Code extension ships the schema inside the `.vsix` via
+`contributes.jsonValidation`. When you add a new config field:
+1. Update the `Config` struct in `internal/config/config.go`.
+2. Update the JSON Schema in `schema/coraza.schema.json`.
+3. Add a test case to `internal/config/config_test.go`.
+4. The Makefile `vscode` target re-copies the schema into the extension.
+
 ## Releases
 
 The core language server, the VS Code extension, and the Neovim plugin ship

@@ -86,6 +86,11 @@ jobs:
         run: npm ci
         working-directory: editors/vscode
 
+      - name: Stage JSON schema into extension
+        run: |
+          mkdir -p editors/vscode/schema
+          cp schema/coraza.schema.json editors/vscode/schema/coraza.schema.json
+
       - name: Compile TypeScript
         run: npm run compile
         working-directory: editors/vscode

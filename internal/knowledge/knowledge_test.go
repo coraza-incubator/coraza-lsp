@@ -29,7 +29,6 @@ func TestAllItemsWellFormed(t *testing.T) {
 	}
 
 	for _, cat := range categories {
-		cat := cat
 		t.Run(cat.name, func(t *testing.T) {
 			t.Parallel()
 			require.NotEmpty(t, cat.items, "category must not be empty")
@@ -232,7 +231,6 @@ func TestLookupHelpers(t *testing.T) {
 	}
 
 	for _, k := range kinds {
-		k := k
 		t.Run(k.name, func(t *testing.T) {
 			t.Parallel()
 			canonical, alias := pick(k.source)

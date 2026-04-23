@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/corazawaf/coraza/v3 v3.4.0
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/stretchr/testify v1.11.1
 	github.com/tliron/commonlog v0.2.18
 	github.com/tliron/glsp v0.2.2

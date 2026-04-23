@@ -25,6 +25,16 @@ var (
 )
 
 func main() {
+	// Subcommand dispatch. Subcommands are detected before flag.Parse so the
+	// top-level flag set can stay LSP-server-oriented (--stdio, --tcp, …).
+	if len(os.Args) >= 2 && os.Args[1] == "init" {
+		if err := runInit(os.Args[2:], os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, "coraza-lsp init:", err)
+			os.Exit(2)
+		}
+		return
+	}
+
 	var (
 		useStdio    = flag.Bool("stdio", false, "Use stdio transport (default when no other transport is specified)")
 		tcpAddr     = flag.String("tcp", "", "Listen on TCP address (e.g. :7998)")

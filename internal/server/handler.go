@@ -6,8 +6,14 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/url"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/coraza-incubator/coraza-lsp/internal/config"
 
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
@@ -34,6 +40,10 @@ type Server struct {
 	// ctxMu guards ctx; captured from any handler call for async notifications.
 	ctxMu sync.RWMutex
 	ctx   *glsp.Context
+
+	// cfgState holds the live `.coraza.json` and its derived analysis options.
+	// See internal/server/config.go.
+	cfgState configState
 }
 
 // New creates and wires up a new Server ready to call RunStdio / RunTCP / RunWebSocket.
@@ -102,6 +112,23 @@ func (s *Server) getCtx() *glsp.Context {
 func (s *Server) initialize(version string) protocol.InitializeFunc {
 	return func(ctx *glsp.Context, params *protocol.InitializeParams) (any, error) {
 		s.saveCtx(ctx)
+
+		// Load `.coraza.json` from the workspace, if any. Parse/validation
+		// errors are surfaced via window/showMessage so users aren't left
+		// wondering why their overrides aren't taking effect.
+		root := workspaceRoot(params)
+		showError := func(msg string) {
+			mt := protocol.MessageTypeWarning
+			go ctx.Notify(protocol.ServerWindowShowMessage, &protocol.ShowMessageParams{
+				Type:    mt,
+				Message: msg,
+			})
+		}
+		s.LoadConfig(root, showError)
+		if err := s.WatchConfig(s.onConfigChange, showError); err != nil {
+			showError(fmt.Sprintf("coraza-lsp: config watcher disabled: %v", err))
+		}
+
 		syncFull := protocol.TextDocumentSyncKindFull
 		triggerChars := []string{"@", ":", " ", "|", "\""}
 		return protocol.InitializeResult{
@@ -134,7 +161,60 @@ func (s *Server) initialized(_ *glsp.Context, _ *protocol.InitializedParams) err
 
 func (s *Server) shutdown(_ *glsp.Context) error {
 	s.validator.CancelAll()
+	s.StopWatchConfig()
 	return nil
+}
+
+// onConfigChange is called by the config watcher after a successful reload.
+// Currently: re-publishes diagnostics for every open document so severity
+// overrides from the new `.coraza.json` take effect immediately.
+func (s *Server) onConfigChange(_, _ config.Config) {
+	ctx := s.getCtx()
+	if ctx == nil {
+		return
+	}
+	for uri, doc := range s.store.AllDocs() {
+		stage1 := analysis.AnalyzeWith(doc.AST, s.analysisOptions())
+		stage1 = s.augmentCrossFile(uri, doc.AST, stage1)
+		uriCopy := uri
+		go ctx.Notify(protocol.ServerTextDocumentPublishDiagnostics, &protocol.PublishDiagnosticsParams{
+			URI:         protocol.DocumentUri(uriCopy),
+			Diagnostics: stage1,
+		})
+	}
+}
+
+// workspaceRoot extracts a filesystem path from the LSP initialize params.
+// Falls back to the current working directory when no root is provided.
+func workspaceRoot(params *protocol.InitializeParams) string {
+	if params == nil {
+		return "."
+	}
+	// Prefer WorkspaceFolders; fall back to rootUri.
+	if len(params.WorkspaceFolders) > 0 {
+		return uriToPath(params.WorkspaceFolders[0].URI)
+	}
+	if params.RootURI != nil {
+		return uriToPath(string(*params.RootURI))
+	}
+	return "."
+}
+
+// uriToPath converts a file:// URI to an OS path, handling Windows drive
+// letters and URL-encoded characters. Best-effort — falls back to the raw
+// input if parsing fails.
+func uriToPath(uri string) string {
+	if strings.HasPrefix(uri, "file://") {
+		if u, err := url.Parse(uri); err == nil {
+			p := u.Path
+			// Windows: file:///C:/foo → u.Path is "/C:/foo"; drop the leading slash.
+			if filepath.VolumeName(strings.TrimPrefix(p, "/")) != "" {
+				p = strings.TrimPrefix(p, "/")
+			}
+			return filepath.FromSlash(p)
+		}
+	}
+	return uri
 }
 
 // ---- document sync ---------------------------------------------------------
@@ -174,8 +254,13 @@ func (s *Server) didClose(ctx *glsp.Context, params *protocol.DidCloseTextDocume
 }
 
 // pushDiagnostics sends Stage-1 diagnostics immediately then schedules Stage-2.
+// The current `.coraza.json` severity overrides are applied on every call —
+// hot-reload takes effect on the next edit/save without restarting the editor.
+// When `global: true` is configured the set is augmented with workspace-wide
+// duplicate-id diagnostics from the indexed closed-file set.
 func (s *Server) pushDiagnostics(ctx *glsp.Context, uri string, doc *Document) {
-	stage1 := analysis.Analyze(doc.AST)
+	stage1 := analysis.AnalyzeWith(doc.AST, s.analysisOptions())
+	stage1 = s.augmentCrossFile(uri, doc.AST, stage1)
 	go ctx.Notify(protocol.ServerTextDocumentPublishDiagnostics, &protocol.PublishDiagnosticsParams{
 		URI:         protocol.DocumentUri(uri),
 		Diagnostics: stage1,

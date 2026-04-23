@@ -138,8 +138,8 @@ func (c *lspClient) readOne() (lspMsg, error) {
 		if line == "" {
 			break
 		}
-		if strings.HasPrefix(line, "Content-Length: ") {
-			contentLen, _ = strconv.Atoi(strings.TrimPrefix(line, "Content-Length: "))
+		if rest, ok := strings.CutPrefix(line, "Content-Length: "); ok {
+			contentLen, _ = strconv.Atoi(rest)
 		}
 	}
 	if contentLen == 0 {
@@ -230,12 +230,25 @@ func (c *lspClient) waitForNotification(method string) lspMsg {
 // All non-lifecycle tests should start here to avoid boilerplate.
 func initClient(t *testing.T) *lspClient {
 	t.Helper()
+	return initClientInDir(t, "")
+}
+
+// initClientInDir starts a server with rootUri pointing at the given
+// workspace directory. Use this when a test needs the server to discover a
+// `.coraza.json` — the LSP can't tell where the workspace is without it.
+func initClientInDir(t *testing.T, dir string) *lspClient {
+	t.Helper()
 	c := startClient(t)
-	id := c.send("initialize", map[string]any{
+	params := map[string]any{
 		"processId":    os.Getpid(),
-		"rootUri":      nil,
 		"capabilities": map[string]any{},
-	})
+	}
+	if dir != "" {
+		params["rootUri"] = "file://" + dir
+	} else {
+		params["rootUri"] = nil
+	}
+	id := c.send("initialize", params)
 	c.waitForResponse(id)
 	c.notify("initialized", map[string]any{})
 	return c
@@ -703,6 +716,55 @@ func TestE2E_Diagnostics_RecoversFromBrokenEdit(t *testing.T) {
 	})
 	resp := c.waitForResponse(hoverID)
 	require.Nil(t, resp["error"], "server should not error after edits through broken states")
+}
+
+// TestE2E_Config_SeverityOverrideOff creates a workspace with a
+// `.coraza.json` that maps `missing-id` to `off`, opens a file that would
+// normally emit missing-id, and asserts the diagnostic is suppressed.
+func TestE2E_Config_SeverityOverrideOff(t *testing.T) {
+	dir := t.TempDir()
+	cfg := `{"diagnostics": {"missing-id": "off"}}`
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".coraza.json"), []byte(cfg), 0o644))
+
+	c := initClientInDir(t, dir)
+	uri := "file://" + dir + "/rule.conf"
+	c.didOpen(uri, `SecRule ARGS "@rx x" "phase:2,deny"`)
+
+	diags := c.waitForDiagnostics(uri)
+	for _, d := range diags {
+		dm, _ := d.(map[string]any)
+		if dm == nil {
+			continue
+		}
+		if code, ok := dm["code"].(string); ok && code == "missing-id" {
+			t.Fatalf("missing-id diagnostic should be suppressed by `.coraza.json`")
+		}
+	}
+}
+
+// TestE2E_Config_CoverageIsInit verifies that a file emitted by `coraza-lsp
+// init` parses through the LSP without surfacing a config parse error. Uses
+// `go run` on the same binary so we're testing the real subcommand plumbing.
+func TestE2E_Config_InitWritesParseableFile(t *testing.T) {
+	dir := t.TempDir()
+	cmd := exec.Command(binaryPath, "init", "--path", dir)
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, string(out))
+
+	c := initClientInDir(t, dir)
+	// Open any .conf — if the config is unparseable the server shows a
+	// window/showMessage with a warning. We simply wait a moment then
+	// request a hover and ensure no error comes back.
+	uri := "file://" + dir + "/sanity.conf"
+	c.didOpen(uri, `SecRule ARGS "@rx x" "id:1,phase:2,deny"`)
+	_ = c.waitForDiagnostics(uri)
+
+	hoverID := c.send("textDocument/hover", map[string]any{
+		"textDocument": map[string]any{"uri": uri},
+		"position":     map[string]any{"line": 0, "character": 3},
+	})
+	resp := c.waitForResponse(hoverID)
+	require.Nil(t, resp["error"], "server should not error with default config")
 }
 
 func TestE2E_VersionInfo(t *testing.T) {

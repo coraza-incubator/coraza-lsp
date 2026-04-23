@@ -44,15 +44,32 @@ Practical consequences:
 - The Stage-2 Coraza WAF oracle also runs per-file, so any diagnostic that
   would require a global view is conservatively suppressed.
 
-### Possible future: an entrypoint config
+### Project config: `.coraza.json`
 
-A small project-level config (e.g. `.coraza-lsp.yaml` at the workspace root)
-that names the entrypoint file and optional include roots would let the
-server build a whole-program view and upgrade cross-file warnings to real
-errors. This is **under discussion** — if you have opinions on shape
-(entrypoint + include-roots? list of files? glob? reuse an existing config
-format?), please weigh in at
-<https://github.com/coraza-incubator/coraza-lsp/issues>.
+Drop a `.coraza.json` at the workspace root to override defaults. Generate a
+commented starter with:
+
+```bash
+coraza-lsp init
+```
+
+Fields:
+
+| Field | Type | Default | Purpose |
+|---|---|---|---|
+| `entrypoint` | string | `""` | Rule file that bootstraps the full set (e.g. `crs-setup.conf`). When set, cross-file diagnostics are promoted to warnings/errors. |
+| `includePaths` | string[] | `[]` | Search roots for `Include` resolution, in order. Relative to the config file. |
+| `global` | boolean | `false` | Index every workspace file matching `filePatterns`, not just open ones. Enables workspace-wide duplicate-id detection. |
+| `filePatterns` | string[] | `["**/*.conf"]` | Files to treat as SecLang (combined with a SecLang-directive sniff). |
+| `ignore` | string[] | `["**/.git/**", "**/node_modules/**"]` | Globs excluded from indexing. |
+| `diagnostics` | map[string]string | `{}` | Per-code severity override: `error` / `warning` / `information` / `hint` / `off`. Keys are the diagnostic codes emitted by the server. |
+
+The file is **hot-reloaded**: saving changes to `.coraza.json` re-applies the
+settings to every open document without restarting the editor.
+
+Schema: <https://raw.githubusercontent.com/coraza-incubator/coraza-lsp/main/schema/coraza.schema.json>
+(the VS Code extension registers this automatically; other editors can
+reference the URL via JSON Schema associations).
 
 ## Installation
 

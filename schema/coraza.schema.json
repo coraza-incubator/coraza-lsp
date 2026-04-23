@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/coraza-incubator/coraza-lsp/main/schema/coraza.schema.json",
+  "title": "coraza-lsp project config",
+  "description": "Project-level configuration for the Coraza SecLang language server. Place this file as `.coraza.json` at the workspace root.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "URL of this JSON schema. Used by editors for autocompletion."
+    },
+    "entrypoint": {
+      "type": "string",
+      "description": "Rule file that bootstraps the full rule set (e.g. 'crs-setup.conf'). When set, cross-file references (skipAfter, SecRuleRemoveById) become warnings/errors instead of informational hints."
+    },
+    "includePaths": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Search roots for resolving Include directives, in order. Relative paths are relative to this config file's directory."
+    },
+    "global": {
+      "type": "boolean",
+      "default": false,
+      "description": "Index every file matching filePatterns under the workspace, not just what is open. Enables workspace-wide duplicate-id detection and cross-file go-to-definition, at the cost of O(workspace) indexing on startup."
+    },
+    "filePatterns": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["**/*.conf"],
+      "description": "Globs (relative to the workspace root) that are SecLang content. Only files matching these patterns AND containing at least one SecLang directive in the first 20 lines are indexed."
+    },
+    "ignore": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["**/.git/**", "**/node_modules/**"],
+      "description": "Globs to exclude from indexing, in addition to .gitignore."
+    },
+    "diagnostics": {
+      "type": "object",
+      "description": "Per-diagnostic severity overrides. Keys are diagnostic codes; values are severity levels.",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["error", "warning", "information", "hint", "off"]
+      },
+      "examples": [
+        {
+          "skipafter-not-found": "warning",
+          "unknown-variable": "off"
+        }
+      ]
+    }
+  }
+}

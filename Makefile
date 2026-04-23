@@ -38,7 +38,9 @@ e2e: build
 	go test -v -timeout 120s ./test/e2e/...
 
 vscode: build
-	cd editors/vscode && npm install && npm run compile
+	mkdir -p editors/vscode/schema
+	cp schema/coraza.schema.json editors/vscode/schema/coraza.schema.json
+	cd editors/vscode && npm install && npm run compile && npm run bundle
 	@echo ""
 	@echo "Binary built and extension compiled. Launch VS Code with:"
 	@echo "  code --extensionDevelopmentPath=\"\$$PWD/editors/vscode\" ."

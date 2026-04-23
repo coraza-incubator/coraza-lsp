@@ -259,7 +259,6 @@ func TestAnalyze_SyntaxEdgeCases(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			require.True(t, utf8.ValidString(tc.src), "test source must be valid utf8")

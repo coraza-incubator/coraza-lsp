@@ -56,7 +56,6 @@ func TestAnalyze_Phase(t *testing.T) {
 		{"0", false}, {"6", false}, {"abc", false}, {"-1", false},
 	}
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.phase, func(t *testing.T) {
 			t.Parallel()
 			src := `SecRule ARGS "@rx test" "id:1001,phase:` + tc.phase + `,deny"`
@@ -74,7 +73,6 @@ func TestAnalyze_Phase(t *testing.T) {
 func TestAnalyze_InvalidID(t *testing.T) {
 	t.Parallel()
 	for _, badID := range []string{"0", "-1", "abc", ""} {
-		badID := badID
 		t.Run(badID, func(t *testing.T) {
 			t.Parallel()
 			src := `SecRule ARGS "@rx test" "id:` + badID + `,phase:2,deny"`
@@ -105,7 +103,6 @@ func TestAnalyze_DuplicateID(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			f := parser.Parse("", tc.src)
@@ -138,7 +135,6 @@ func TestAnalyze_SkipAfter(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			f := parser.Parse("", tc.src)

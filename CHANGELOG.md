@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Project config file `.coraza.json` at the workspace root, with JSON Schema
+  (`schema/coraza.schema.json`). Fields: `entrypoint`, `includePaths`,
+  `global`, `filePatterns`, `ignore`, `diagnostics`. Comments via the
+  `"//":` JSONC convention supported.
+- `coraza-lsp init` subcommand — writes a commented starter config.
+- Hot reload: `.coraza.json` is watched via `fsnotify`; saving changes
+  re-applies settings to every open document (100 ms debounce).
+- Per-diagnostic severity overrides via `diagnostics` map (e.g.
+  `"skipafter-not-found": "error"`, `"unknown-variable": "off"`).
+- Workspace-wide duplicate-id detection when `global: true` — closed rule
+  files are indexed and cross-file id collisions surface as diagnostics.
+- VS Code extension registers the JSON schema via `contributes.jsonValidation`
+  so `.coraza.json` autocompletes out of the box.
+- VS Code extension bundled with esbuild — `.vsix` drops from 324 files /
+  476 KB to 11 files / 103 KB, bundling warning eliminated.
+
 ## [0.1.0] - 2026-04-23
 
 Initial release.

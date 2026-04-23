@@ -1,11 +1,14 @@
 .vscode-test.mjs
 .vscode-test/
-out/test/
-src/
-testdata/
+.gitignore
+.eslintrc.*
 tsconfig.json
+src/
+out/
+testdata/
+node_modules/
 **/*.map
+**/*.ts
 # Contributor docs — only README.md, CHANGELOG.md, LICENSE ship to Marketplace.
 PUBLISHING.md
-node_modules/.package-lock.json
 coraza-lsp*.vsix

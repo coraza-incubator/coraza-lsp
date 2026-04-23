@@ -27,6 +27,7 @@ import (
 	"github.com/corazawaf/coraza/v3/types"
 	protocol_3_16 "github.com/tliron/glsp/protocol_3_16"
 
+	"github.com/coraza-incubator/coraza-lsp/internal/config"
 	"github.com/coraza-incubator/coraza-lsp/internal/knowledge"
 	"github.com/coraza-incubator/coraza-lsp/internal/parser"
 )
@@ -54,6 +55,21 @@ const (
 	CodeParseError           DiagnosticCode = "parse-error"
 	CodeCorazaError          DiagnosticCode = "coraza-error"
 )
+
+// AllDiagnosticCodes lists every code emitted by this package. Used by
+// internal/config to validate user-provided severity-override maps.
+var AllDiagnosticCodes = []DiagnosticCode{
+	CodeMissingID, CodeMissingPhase, CodeInvalidPhase, CodeInvalidID,
+	CodeDuplicateID, CodeUnknownDirective, CodeUnknownVariable,
+	CodeUnknownCtlOption, CodeInvalidCtlValue, CodeSkipAfterNotFound,
+	CodeInvalidMacro, CodeUnknownAction, CodeUnknownTransformation,
+	CodeMissingTransformation, CodeInvalidSeverity, CodeUnknownOperator,
+	CodeParseError, CodeCorazaError,
+}
+
+func init() {
+	config.RegisterDiagnosticCodes(AllDiagnosticCodes...)
+}
 
 // knownDirectives is the set of directive names recognized by Coraza, derived
 // from the knowledge base so it stays in sync automatically.
@@ -114,10 +130,26 @@ var validSeverities = map[string]bool{
 	"0": true, "1": true, "2": true, "3": true, "4": true, "5": true, "6": true, "7": true,
 }
 
-// Analyze runs Stage 1 (AST-level) diagnostics synchronously and returns results immediately.
-// This function is safe to call from multiple goroutines.
+// Analyze runs Stage 1 diagnostics with the shipped defaults. Thin wrapper
+// over AnalyzeWith for callers that don't need per-diagnostic severity
+// overrides.
 func Analyze(f *parser.File) []protocol_3_16.Diagnostic {
-	var diags []protocol_3_16.Diagnostic
+	return AnalyzeWith(f, DefaultOptions())
+}
+
+// AnalyzeWith runs Stage 1 (AST-level) diagnostics synchronously and returns
+// results immediately. opts lets callers remap severities per diagnostic code
+// (via the `.coraza.json` `diagnostics` map) and enable cross-file
+// strictness when an entrypoint is configured.
+// This function is safe to call from multiple goroutines.
+func AnalyzeWith(f *parser.File, opts Options) []protocol_3_16.Diagnostic {
+	return opts.apply(analyzeRaw(f, nil))
+}
+
+// analyzeRaw is the original body of Analyze — it emits diagnostics without
+// any severity overrides applied. Kept as a discrete function so AnalyzeWith
+// can run severity remapping as a single post-processing pass.
+func analyzeRaw(f *parser.File, diags []protocol_3_16.Diagnostic) []protocol_3_16.Diagnostic {
 
 	// Collect parse errors from the AST.
 	for _, pe := range f.Errors {
