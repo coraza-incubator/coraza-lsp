@@ -1,0 +1,3 @@
+{
+  "coraza-lsp.serverPath": "${workspaceFolder}/bin/coraza-lsp"
+}

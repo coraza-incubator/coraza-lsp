@@ -1,0 +1,18 @@
+/bin/
+/dist/
+coverage.out
+coverage.html
+
+# Editors / IDEs
+.DS_Store
+*.swp
+*.swo
+
+# VS Code extension build artifacts
+editors/vscode/node_modules/
+editors/vscode/out/
+editors/vscode/*.vsix
+
+# Monaco build artifacts
+editors/monaco/node_modules/
+editors/monaco/dist/

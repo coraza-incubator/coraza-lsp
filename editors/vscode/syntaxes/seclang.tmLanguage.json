@@ -1,0 +1,303 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "SecLang",
+  "scopeName": "source.seclang",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#operator-continuation" },
+    { "include": "#action-list-continuation" },
+    { "include": "#directive" }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.line.number-sign.seclang",
+      "match": "^\\s*#.*$"
+    },
+    "directive": {
+      "patterns": [
+        { "include": "#rule-directive" },
+        { "include": "#generic-directive" }
+      ]
+    },
+    "rule-directive": {
+      "name": "meta.rule.seclang",
+      "begin": "(?i)\\b(SecRule|SecAction|SecDefaultAction)\\b",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.directive.seclang" }
+      },
+      "end": "$",
+      "patterns": [
+        { "include": "#variable-list" },
+        { "include": "#operator-expr" },
+        { "include": "#action-string" },
+        { "include": "#continuation" }
+      ]
+    },
+    "generic-directive": {
+      "name": "meta.directive.seclang",
+      "match": "(?i)^\\s*(Sec[A-Za-z]+|Include|SecMarker)\\b(.*)",
+      "captures": {
+        "1": { "name": "keyword.control.directive.seclang" },
+        "2": { "name": "string.unquoted.seclang" }
+      }
+    },
+    "operator-continuation": {
+      "comment": "Operator expression on a continuation line, e.g. '    \"@rx pattern\" \\'. Must be listed before action-list-continuation so it wins over the generic indented-quote rule.",
+      "name": "meta.operator.seclang",
+      "match": "^\\s+\"(!?)(@)([a-zA-Z][a-zA-Z0-9_]*)((?:\\s+(?:[^\"\\\\]|\\\\.)*)?)\"",
+      "captures": {
+        "1": { "name": "keyword.operator.seclang" },
+        "2": { "name": "entity.name.function.seclang" },
+        "3": { "name": "entity.name.function.seclang" },
+        "4": { "name": "string.quoted.double.seclang" }
+      }
+    },
+    "action-list-continuation": {
+      "comment": "Action list that starts on a continuation line (indented double-quoted string). The negative lookahead (?![!]?@) prevents this rule from consuming operator continuation lines like '\"@rx ...\"'.",
+      "name": "meta.action-list.seclang",
+      "begin": "^(\\s+)(\"(?![!]?@))",
+      "end": "\"",
+      "patterns": [
+        { "include": "#action-msg-quoted" },
+        { "include": "#action-tag-quoted" },
+        { "include": "#action-setvar-quoted" },
+        { "include": "#action-setvar-key" },
+        { "include": "#action-metadata-quoted" },
+        { "include": "#action-disruptive" },
+        { "include": "#action-flow" },
+        { "include": "#action-id" },
+        { "include": "#action-phase" },
+        { "include": "#action-status" },
+        { "include": "#action-skip" },
+        { "include": "#action-severity" },
+        { "include": "#action-skipafter" },
+        { "include": "#action-ctl" },
+        { "include": "#macro-expansion" },
+        { "include": "#action-separator" },
+        { "include": "#action-key" },
+        { "include": "#action-value" },
+        { "include": "#transformation" },
+        { "include": "#continuation" }
+      ]
+    },
+    "variable-list": {
+      "name": "entity.name.class.seclang",
+      "match": "[A-Za-z_][A-Za-z0-9_.]*(?::[^\\s\"\\\\]*)?"
+    },
+    "operator-expr": {
+      "name": "meta.operator.seclang",
+      "match": "\"(!?)(@)([a-zA-Z][a-zA-Z0-9_]*)(\\s+(?:[^\"\\\\]|\\\\.)*)?\"",
+      "captures": {
+        "1": { "name": "keyword.operator.seclang" },
+        "2": { "name": "entity.name.function.seclang" },
+        "3": { "name": "entity.name.function.seclang" },
+        "4": { "name": "string.quoted.double.seclang" }
+      }
+    },
+    "action-string": {
+      "name": "meta.action-list.seclang",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        { "include": "#action-msg-quoted" },
+        { "include": "#action-tag-quoted" },
+        { "include": "#action-setvar-quoted" },
+        { "include": "#action-setvar-key" },
+        { "include": "#action-metadata-quoted" },
+        { "include": "#action-disruptive" },
+        { "include": "#action-flow" },
+        { "include": "#action-id" },
+        { "include": "#action-phase" },
+        { "include": "#action-status" },
+        { "include": "#action-skip" },
+        { "include": "#action-severity" },
+        { "include": "#action-skipafter" },
+        { "include": "#action-ctl" },
+        { "include": "#macro-expansion" },
+        { "include": "#action-separator" },
+        { "include": "#action-key" },
+        { "include": "#action-value" },
+        { "include": "#transformation" }
+      ]
+    },
+
+    "action-disruptive": {
+      "comment": "Disruptive actions that terminate rule processing with an enforcement action.",
+      "match": "\\b(deny|block|drop|allow|redirect|proxy)\\b",
+      "captures": {
+        "1": { "name": "keyword.control.disruptive.seclang" }
+      }
+    },
+    "action-flow": {
+      "comment": "Non-disruptive flow/logging actions.",
+      "match": "\\b(pass|log|nolog|auditlog|noauditlog|capture|chain|multiMatch|pause)\\b",
+      "captures": {
+        "1": { "name": "keyword.control.flow.seclang" }
+      }
+    },
+    "action-id": {
+      "comment": "id:N — rule identifier; N colored as a numeric constant.",
+      "match": "(id:)(['\"]?\\d+['\"]?)",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.seclang" },
+        "2": { "name": "constant.numeric.seclang" }
+      }
+    },
+    "action-phase": {
+      "comment": "phase:N or phase:request|response|logging.",
+      "match": "(phase:)(request|response|logging|\\d+)",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.seclang" },
+        "2": { "name": "constant.numeric.seclang" }
+      }
+    },
+    "action-status": {
+      "comment": "status:N — HTTP status code colored as a numeric constant.",
+      "match": "(status:)(\\d+)",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.seclang" },
+        "2": { "name": "constant.numeric.seclang" }
+      }
+    },
+    "action-skip": {
+      "comment": "skip:N — skip N rules; N colored as a numeric constant.",
+      "match": "(skip:)(\\d+)",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.seclang" },
+        "2": { "name": "constant.numeric.seclang" }
+      }
+    },
+    "action-severity": {
+      "comment": "severity:LEVEL or severity:'LEVEL' — severity colored as a language constant.",
+      "match": "(severity:)(['\"]?)(EMERGENCY|ALERT|CRITICAL|ERROR|WARNING|NOTICE|INFO|DEBUG|[0-7])(['\"]?)",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.seclang" },
+        "2": { "name": "punctuation.definition.string.seclang" },
+        "3": { "name": "constant.language.severity.seclang" },
+        "4": { "name": "punctuation.definition.string.seclang" }
+      }
+    },
+    "action-skipafter": {
+      "comment": "skipAfter:LABEL — marker label colored as an entity name.",
+      "match": "(skipAfter:)([^,\"'\\\\]+)",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.seclang" },
+        "2": { "name": "entity.name.label.seclang" }
+      }
+    },
+    "action-msg-quoted": {
+      "comment": "msg:'...' — matched atomically to prevent outer patterns (e.g. action-value) bleeding into the message content.",
+      "match": "(msg:)(')([^']*)(')",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.seclang" },
+        "2": { "name": "punctuation.definition.string.begin.seclang" },
+        "3": {
+          "name": "string.quoted.single.msg.seclang",
+          "patterns": [
+            { "include": "#macro-expansion" }
+          ]
+        },
+        "4": { "name": "punctuation.definition.string.end.seclang" }
+      }
+    },
+    "action-tag-quoted": {
+      "comment": "tag:'...' — tag value as a string scope.",
+      "match": "(tag:)(')([^']*)(')",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.seclang" },
+        "2": { "name": "punctuation.definition.string.begin.seclang" },
+        "3": { "name": "string.quoted.single.tag.seclang" },
+        "4": { "name": "punctuation.definition.string.end.seclang" }
+      }
+    },
+    "action-setvar-quoted": {
+      "comment": "setvar:'var=value' — the = is an assignment operator; macro expansions are highlighted inside.",
+      "match": "((?:setvar|setenv|expirevar):)(')([^']*)(')",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.seclang" },
+        "2": { "name": "punctuation.definition.string.begin.seclang" },
+        "3": {
+          "name": "string.quoted.single.setvar.seclang",
+          "patterns": [
+            { "include": "#macro-expansion" },
+            { "match": "=", "name": "keyword.operator.assignment.seclang" }
+          ]
+        },
+        "4": { "name": "punctuation.definition.string.end.seclang" }
+      }
+    },
+    "action-metadata-quoted": {
+      "comment": "ver:/rev:/maturity:/accuracy:/logdata: with single-quoted values.",
+      "match": "(ver:|rev:|maturity:|accuracy:|logdata:)(')([^']*)(')",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.seclang" },
+        "2": { "name": "punctuation.definition.string.begin.seclang" },
+        "3": {
+          "name": "string.quoted.single.seclang",
+          "patterns": [
+            { "include": "#macro-expansion" }
+          ]
+        },
+        "4": { "name": "punctuation.definition.string.end.seclang" }
+      }
+    },
+    "action-ctl": {
+      "comment": "ctl:option=value — option name and = operator get distinct scopes.",
+      "match": "(ctl:)([a-zA-Z]+)(=?)([^,\"'\\\\]*)",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.seclang" },
+        "2": { "name": "entity.other.attribute-name.seclang" },
+        "3": { "name": "keyword.operator.assignment.seclang" },
+        "4": { "name": "string.unquoted.seclang" }
+      }
+    },
+
+    "action-setvar-key": {
+      "comment": "setvar/setenv/expirevar:VARNAME=value — unquoted form. Variable name, = operator, and value (with macro expansion inside) each get distinct scopes.",
+      "match": "((?:setvar|setenv|expirevar):)([A-Za-z_][A-Za-z0-9_.]*)(=)([^,\"']*)",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.seclang" },
+        "2": { "name": "variable.other.seclang" },
+        "3": { "name": "keyword.operator.assignment.seclang" },
+        "4": {
+          "name": "string.unquoted.setvar-value.seclang",
+          "patterns": [
+            { "include": "#macro-expansion" }
+          ]
+        }
+      }
+    },
+    "action-separator": {
+      "comment": "Comma separator between actions in an action list.",
+      "name": "punctuation.separator.comma.seclang",
+      "match": ","
+    },
+    "action-key": {
+      "name": "entity.other.attribute-name.seclang",
+      "match": "(?:^|(?<=[,\"]))\\s*([a-zA-Z][a-zA-Z0-9_]*)(?=[:,\"]|$)"
+    },
+    "action-value": {
+      "name": "string.unquoted.action-value.seclang",
+      "match": "(?<=:)(?:[^,\"'%]|%(?!\\{))+"
+    },
+    "macro-expansion": {
+      "comment": "Matches %{COLLECTION} and %{COLLECTION.key} / %{COLLECTION:key}. Case-insensitive: CRS uses lowercase tx.score etc. Group 1 = %{, group 2 = collection name, group 3 = .key or :key (optional), group 4 = }.",
+      "name": "meta.macro.seclang",
+      "match": "(%\\{)([A-Za-z_][A-Za-z0-9_]*)((?:[.:])[^}]*)?(\\})",
+      "captures": {
+        "1": { "name": "punctuation.definition.macro.begin.seclang" },
+        "2": { "name": "variable.other.macro.collection.seclang" },
+        "3": { "name": "variable.other.macro.key.seclang" },
+        "4": { "name": "punctuation.definition.macro.end.seclang" }
+      }
+    },
+    "transformation": {
+      "name": "support.function.builtin.seclang",
+      "match": "(?<=t:)[a-zA-Z][a-zA-Z0-9_]*"
+    },
+    "continuation": {
+      "name": "punctuation.separator.continuation.seclang",
+      "match": "\\\\$"
+    }
+  }
+}

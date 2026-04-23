@@ -1,0 +1,90 @@
+{
+  "name": "coraza-lsp",
+  "displayName": "Coraza SecLang",
+  "description": "Language support for OWASP Coraza / ModSecurity SecLang rule files",
+  "version": "0.1.0",
+  "publisher": "corazawaf",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coraza-incubator/coraza-lsp"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": ["Programming Languages", "Linters", "Formatters"],
+  "keywords": ["coraza", "modsecurity", "seclang", "waf", "rules"],
+  "activationEvents": ["onLanguage:seclang"],
+  "icon": "images/coraza.png",
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "seclang",
+        "aliases": ["Coraza SecLang", "SecLang", "Coraza Rules", "ModSecurity Rules"],
+        "extensions": [".conf"],
+        "icon": {
+          "light": "./images/coraza.png",
+          "dark": "./images/coraza.png"
+        },
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "seclang",
+        "scopeName": "source.seclang",
+        "path": "./syntaxes/seclang.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "coraza-lsp.restartServer",
+        "title": "Restart Language Server",
+        "category": "Coraza"
+      },
+      {
+        "command": "coraza-lsp.showOutputChannel",
+        "title": "Show Output Channel",
+        "category": "Coraza"
+      }
+    ],
+    "configuration": {
+      "title": "Coraza SecLang",
+      "properties": {
+        "coraza-lsp.serverPath": {
+          "type": "string",
+          "default": "coraza-lsp",
+          "description": "Path to the coraza-lsp binary. Defaults to 'coraza-lsp' (must be on $PATH)."
+        },
+        "coraza-lsp.trace.server": {
+          "type": "string",
+          "enum": ["off", "messages", "verbose"],
+          "default": "off",
+          "description": "Trace LSP communication between VS Code and the language server."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "vscode-test",
+    "vscode:prepublish": "npm run compile",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.0",
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.75.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.0",
+    "@vscode/vsce": "^2.0.0",
+    "mocha": "^10.4.0",
+    "typescript": "^5.0.0"
+  }
+}

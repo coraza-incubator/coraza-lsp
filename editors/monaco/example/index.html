@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coraza SecLang Editor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; background: #1e1e1e; color: #d4d4d4; height: 100vh; display: flex; flex-direction: column; }
+    header { padding: 8px 16px; background: #252526; border-bottom: 1px solid #3c3c3c; display: flex; align-items: center; gap: 12px; }
+    header h1 { font-size: 14px; font-weight: 600; }
+    #status { font-size: 12px; color: #9cdcfe; }
+    #container { flex: 1; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Coraza SecLang Editor</h1>
+    <span id="status">Connecting…</span>
+  </header>
+  <div id="container"></div>
+
+  <!--
+    This example requires a bundler (Webpack/Vite) in practice because Monaco
+    and the language client use ES modules + workers. The snippet below shows
+    the logical wiring; adapt to your bundler config.
+
+    For a quick local test:
+      1. npm install
+      2. npx vite --open example/index.html
+
+    Key packages:
+      monaco-editor
+      vscode-ws-jsonrpc
+      monaco-languageclient
+  -->
+  <script type="module">
+    // NOTE: Replace these with your actual bundled imports.
+    // import * as monaco from 'monaco-editor';
+    // import { toSocket, WebSocketMessageReader, WebSocketMessageWriter } from 'vscode-ws-jsonrpc';
+    // import { MonacoLanguageClient } from 'monaco-languageclient';
+
+    const status = document.getElementById('status');
+
+    // ---------- Monaco setup ----------
+    // monaco.languages.register({ id: 'seclang', extensions: ['.conf'] });
+    // const editor = monaco.editor.create(document.getElementById('container'), {
+    //   language: 'seclang',
+    //   theme: 'vs-dark',
+    //   value: [
+    //     '# Example Coraza SecLang rules',
+    //     'SecRuleEngine On',
+    //     'SecRule ARGS "@rx <script>" \\',
+    //     '    "id:1001,phase:2,deny,status:403,msg:\'XSS Attack\'"',
+    //   ].join('\n'),
+    // });
+
+    // ---------- Language client ----------
+    // const ws = new WebSocket('ws://localhost:7999');
+    // ws.onopen = () => {
+    //   status.textContent = 'Connected';
+    //   const socket = toSocket(ws);
+    //   const reader = new WebSocketMessageReader(socket);
+    //   const writer = new WebSocketMessageWriter(socket);
+    //   const client = new MonacoLanguageClient({
+    //     name: 'Coraza SecLang',
+    //     clientOptions: { documentSelector: ['seclang'] },
+    //     connectionProvider: { get: () => Promise.resolve({ reader, writer }) },
+    //   });
+    //   client.start();
+    //   reader.onClose(() => { status.textContent = 'Disconnected'; client.stop(); });
+    // };
+    // ws.onerror = () => { status.textContent = 'Connection error'; };
+
+    status.textContent = '(unbundled placeholder — see comments)';
+  </script>
+</body>
+</html>
