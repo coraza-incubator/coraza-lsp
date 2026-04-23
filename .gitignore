@@ -16,3 +16,6 @@ editors/vscode/*.vsix
 # Monaco build artifacts
 editors/monaco/node_modules/
 editors/monaco/dist/
+
+# Local Claude Code scratch/session state
+.claude/

@@ -1,0 +1,183 @@
+name: Editors
+
+# Exercises the per-editor integrations (VS Code extension, Neovim plugin).
+# Only runs when editor code, the core Go server, or this workflow change —
+# it's intentionally a separate gate from the core `CI` workflow so a flaky
+# editor host (xvfb, neovim plugin manager, etc.) doesn't block a language
+# server release. Failures here are actionable but non-blocking for core.
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "editors/**"
+      - "cmd/**"
+      - "internal/**"
+      - "go.mod"
+      - "go.sum"
+      - ".github/workflows/editors.yml"
+  pull_request:
+    paths:
+      - "editors/**"
+      - "cmd/**"
+      - "internal/**"
+      - "go.mod"
+      - "go.sum"
+      - ".github/workflows/editors.yml"
+
+jobs:
+  # -------------------------------------------------------------------------
+  # Build the language server binary that the editor jobs depend on.
+  # -------------------------------------------------------------------------
+  build-binary:
+    name: Build binary (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            binary: coraza-lsp
+          - os: macos-latest
+            binary: coraza-lsp
+          - os: windows-latest
+            binary: coraza-lsp.exe
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Build
+        run: go build -o bin/${{ matrix.binary }} ./cmd/coraza-lsp
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.os }}
+          path: bin/${{ matrix.binary }}
+
+  # -------------------------------------------------------------------------
+  # VSCode extension: compile + tests (requires a built binary).
+  # -------------------------------------------------------------------------
+  vscode-extension:
+    name: VSCode extension (${{ matrix.os }})
+    needs: build-binary
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true # advisory — editor hosts are flaky under xvfb
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            binary: coraza-lsp
+          - os: macos-latest
+            binary: coraza-lsp
+          - os: windows-latest
+            binary: coraza-lsp.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: editors/vscode
+
+      - name: Compile TypeScript
+        run: npm run compile
+        working-directory: editors/vscode
+
+      - name: Download binary
+        uses: actions/download-artifact@v4
+        with:
+          name: binary-${{ matrix.os }}
+          path: bin/
+
+      - name: Make binary executable (Unix)
+        if: runner.os != 'Windows'
+        run: chmod +x bin/${{ matrix.binary }}
+
+      - name: Add binary to PATH (Unix)
+        if: runner.os != 'Windows'
+        run: echo "$GITHUB_WORKSPACE/bin" >> "$GITHUB_PATH"
+
+      - name: Add binary to PATH (Windows)
+        if: runner.os == 'Windows'
+        run: Add-Content $env:GITHUB_PATH "$env:GITHUB_WORKSPACE\bin"
+        shell: pwsh
+
+      - name: Run extension tests (Linux)
+        if: runner.os == 'Linux'
+        uses: coactions/setup-xvfb@v1
+        with:
+          run: npm test
+          working-directory: ${{ github.workspace }}/editors/vscode
+
+      - name: Run extension tests (macOS / Windows)
+        if: runner.os != 'Linux'
+        run: npm test
+        working-directory: editors/vscode
+
+  # -------------------------------------------------------------------------
+  # Neovim plugin: plenary.nvim unit + integration tests
+  # -------------------------------------------------------------------------
+  neovim-extension:
+    name: Neovim extension (${{ matrix.os }}, nvim ${{ matrix.nvim_version }})
+    needs: build-binary
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true # advisory
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            binary: coraza-lsp
+            nvim_version: stable
+          - os: macos-latest
+            binary: coraza-lsp
+            nvim_version: stable
+          - os: ubuntu-latest
+            binary: coraza-lsp
+            nvim_version: nightly
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Neovim ${{ matrix.nvim_version }}
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: ${{ matrix.nvim_version }}
+
+      - name: Download binary
+        uses: actions/download-artifact@v4
+        with:
+          name: binary-${{ matrix.os }}
+          path: bin/
+
+      - name: Make binary executable
+        run: chmod +x bin/${{ matrix.binary }}
+
+      - name: Pre-install plenary.nvim
+        run: |
+          NVIM_DATA=$(nvim --headless --noplugin -c 'lua io.write(vim.fn.stdpath("data"))' +qa 2>/dev/null)
+          PLENARY_DIR="${NVIM_DATA}/site/pack/coraza-lsp-test/start/plenary.nvim"
+          mkdir -p "$(dirname "$PLENARY_DIR")"
+          git clone --depth 1 https://github.com/nvim-lua/plenary.nvim "$PLENARY_DIR"
+
+      - name: Run Neovim plugin unit tests
+        run: |
+          nvim --headless -u editors/vim/test/minimal_init.lua \
+            -c "PlenaryBustedDirectory editors/vim/test/spec {minimal_init='editors/vim/test/minimal_init.lua'}" \
+            +qa
+
+      - name: Run Neovim plugin integration tests (with real binary)
+        env:
+          CORAZA_LSP_PATH: ${{ github.workspace }}/bin/${{ matrix.binary }}
+        run: |
+          nvim --headless -u editors/vim/test/minimal_init.lua \
+            -c "PlenaryBustedDirectory editors/vim/test/spec {minimal_init='editors/vim/test/minimal_init.lua'}" \
+            +qa

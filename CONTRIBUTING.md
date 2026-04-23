@@ -38,6 +38,28 @@ Key packages:
 - For new language-level behaviour, update the knowledge base and both
   completion + hover + diagnostic tests as needed.
 
+## Releases
+
+The core language server, the VS Code extension, and the Neovim plugin ship
+independently. Each has its own tag prefix so you only trigger the release
+pipeline for the thing that actually changed.
+
+| Artifact | Version source | Tag format | Workflow |
+|---|---|---|---|
+| Core LSP (Go binary) | `git describe` / goreleaser | `v<semver>` (e.g. `v0.1.0`) | `.github/workflows/release.yml` |
+| VS Code extension | `editors/vscode/package.json` | `vscode-v<semver>` (e.g. `vscode-v0.1.0`) | `.github/workflows/release-vscode.yml` |
+| Neovim plugin | `editors/vim/` at HEAD | no tag needed; plugin managers follow git | — |
+
+Rules of thumb:
+
+- Bumping core code → bump `CHANGELOG.md`, commit, tag `v<new>`, push tag.
+  Don't touch the extension version.
+- Bumping the VS Code extension → bump `editors/vscode/package.json` version,
+  commit, tag `vscode-v<new>`, push tag. The workflow verifies the tag matches
+  the manifest before publishing.
+- Both changed → two separate commits and two separate tags. This keeps
+  release notes scoped and lets downstream users pin.
+
 ## Commit style
 
 Conventional-commit-flavoured prefixes are appreciated (`feat:`, `fix:`,

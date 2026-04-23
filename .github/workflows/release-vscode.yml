@@ -1,0 +1,67 @@
+name: Release VSCode Extension
+
+# Publishes the VS Code extension to the Marketplace independently of the
+# core language-server release cadence.
+#
+# Release convention:
+#   - Core LSP release    → tag `v<semver>`  → triggers release.yml (goreleaser).
+#   - VS Code extension   → tag `vscode-v<semver>` → triggers THIS workflow.
+#   - Neovim plugin       → no artifact; plugin managers consume git refs.
+#
+# Only tag the thing that actually changed. The tag's semver must match the
+# `version` field in the corresponding package manifest at HEAD.
+
+on:
+  push:
+    tags:
+      - "vscode-v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish VS Code extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: editors/vscode
+
+      - name: Compile TypeScript
+        run: npm run compile
+        working-directory: editors/vscode
+
+      - name: Verify tag matches package.json version
+        run: |
+          TAG="${GITHUB_REF_NAME#vscode-v}"
+          PKG=$(jq -r .version editors/vscode/package.json)
+          if [ "$TAG" != "$PKG" ]; then
+            echo "Tag $GITHUB_REF_NAME (parsed as $TAG) does not match package.json version $PKG" >&2
+            exit 1
+          fi
+
+      - name: Package extension
+        run: npx vsce package
+        working-directory: editors/vscode
+
+      - name: Publish to VS Code Marketplace
+        # Skip publish when the secret isn't set — the .vsix artifact is still
+        # attached to the GitHub release so someone with the secret can upload.
+        if: ${{ env.VSCE_PAT != '' }}
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx vsce publish --pat "$VSCE_PAT"
+        working-directory: editors/vscode
+
+      - name: Attach .vsix to GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: editors/vscode/*.vsix
+          generate_release_notes: true

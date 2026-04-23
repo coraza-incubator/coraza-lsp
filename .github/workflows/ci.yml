@@ -3,7 +3,23 @@ name: CI
 on:
   push:
     branches: ["**"]
+    paths:
+      - "cmd/**"
+      - "internal/**"
+      - "test/**"
+      - "go.mod"
+      - "go.sum"
+      - "Makefile"
+      - ".github/workflows/ci.yml"
   pull_request:
+    paths:
+      - "cmd/**"
+      - "internal/**"
+      - "test/**"
+      - "go.mod"
+      - "go.sum"
+      - "Makefile"
+      - ".github/workflows/ci.yml"
 
 jobs:
   # -------------------------------------------------------------------------
@@ -94,137 +110,3 @@ jobs:
         with:
           name: binary-${{ matrix.os }}
           path: bin/${{ matrix.binary }}
-
-  # -------------------------------------------------------------------------
-  # VSCode extension: compile + tests (requires a built binary)
-  # -------------------------------------------------------------------------
-  vscode-extension:
-    name: VSCode extension (${{ matrix.os }})
-    needs: build-binary
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            binary: coraza-lsp
-          - os: macos-latest
-            binary: coraza-lsp
-          - os: windows-latest
-            binary: coraza-lsp.exe
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install dependencies
-        run: npm ci
-        working-directory: editors/vscode
-
-      - name: Compile TypeScript
-        run: npm run compile
-        working-directory: editors/vscode
-
-      - name: Download binary
-        uses: actions/download-artifact@v4
-        with:
-          name: binary-${{ matrix.os }}
-          path: bin/
-
-      - name: Make binary executable (Unix)
-        if: runner.os != 'Windows'
-        run: chmod +x bin/${{ matrix.binary }}
-
-      - name: Add binary to PATH (Unix)
-        if: runner.os != 'Windows'
-        run: echo "$GITHUB_WORKSPACE/bin" >> "$GITHUB_PATH"
-
-      - name: Add binary to PATH (Windows)
-        if: runner.os == 'Windows'
-        run: Add-Content $env:GITHUB_PATH "$env:GITHUB_WORKSPACE\bin"
-        shell: pwsh
-
-      # Linux: wrap with Xvfb so VS Code can open a headless display
-      - name: Run extension tests (Linux)
-        if: runner.os == 'Linux'
-        uses: coactions/setup-xvfb@v1
-        with:
-          run: npm test
-          working-directory: ${{ github.workspace }}/editors/vscode
-
-      - name: Run extension tests (macOS / Windows)
-        if: runner.os != 'Linux'
-        run: npm test
-        working-directory: editors/vscode
-
-  # -------------------------------------------------------------------------
-  # Neovim plugin: plenary.nvim unit + integration tests
-  # Tests all three spec files: filetype, LSP setup, ALE linter structure.
-  # Integration tests run when the binary is available via CORAZA_LSP_PATH.
-  # -------------------------------------------------------------------------
-  neovim-extension:
-    name: Neovim extension (${{ matrix.os }}, nvim ${{ matrix.nvim_version }})
-    needs: build-binary
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Stable Neovim on Linux and macOS
-          - os: ubuntu-latest
-            binary: coraza-lsp
-            nvim_version: stable
-          - os: macos-latest
-            binary: coraza-lsp
-            nvim_version: stable
-          # Nightly on Linux to catch regressions early
-          - os: ubuntu-latest
-            binary: coraza-lsp
-            nvim_version: nightly
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Neovim ${{ matrix.nvim_version }}
-        uses: rhysd/action-setup-vim@v1
-        with:
-          neovim: true
-          version: ${{ matrix.nvim_version }}
-
-      - name: Download binary
-        uses: actions/download-artifact@v4
-        with:
-          name: binary-${{ matrix.os }}
-          path: bin/
-
-      - name: Make binary executable
-        run: chmod +x bin/${{ matrix.binary }}
-
-      # Pre-clone plenary.nvim into the path minimal_init.lua expects,
-      # so the bootstrap git clone never runs inside the headless test process.
-      - name: Pre-install plenary.nvim
-        run: |
-          NVIM_DATA=$(nvim --headless --noplugin -c 'lua io.write(vim.fn.stdpath("data"))' +qa 2>/dev/null)
-          PLENARY_DIR="${NVIM_DATA}/site/pack/coraza-lsp-test/start/plenary.nvim"
-          mkdir -p "$(dirname "$PLENARY_DIR")"
-          git clone --depth 1 https://github.com/nvim-lua/plenary.nvim "$PLENARY_DIR"
-
-      # Unit tests: run without the binary — integration tests are skipped via pending().
-      - name: Run Neovim plugin unit tests
-        run: |
-          nvim --headless -u editors/vim/test/minimal_init.lua \
-            -c "PlenaryBustedDirectory editors/vim/test/spec {minimal_init='editors/vim/test/minimal_init.lua'}" \
-            +qa
-
-      # Integration tests: re-run the full suite with the real binary available.
-      # The previously-pending integration tests now execute.
-      - name: Run Neovim plugin integration tests (with real binary)
-        env:
-          CORAZA_LSP_PATH: ${{ github.workspace }}/bin/${{ matrix.binary }}
-        run: |
-          nvim --headless -u editors/vim/test/minimal_init.lua \
-            -c "PlenaryBustedDirectory editors/vim/test/spec {minimal_init='editors/vim/test/minimal_init.lua'}" \
-            +qa

@@ -1,9 +1,15 @@
-name: Release
+name: Release LSP
 
+# Publishes the core language-server binary. Triggered by `v<semver>` tags
+# ONLY — the VS Code extension has its own release workflow triggered by
+# `vscode-v<semver>` tags so the two can ship independently.
+#
+# Do NOT use this workflow for tags that carry an editor-scoped prefix.
 on:
   push:
     tags:
       - "v*.*.*"
+      - "!vscode-v*.*.*"
 
 permissions:
   contents: write

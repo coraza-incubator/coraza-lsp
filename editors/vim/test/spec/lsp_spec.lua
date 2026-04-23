@@ -28,6 +28,13 @@ local function teardown()
       vim.api.nvim_buf_delete(buf, { force = true })
     end
   end
+  -- Force a fresh require() on the next test so module-local state
+  -- (e.g. _initialized) resets. Otherwise a prior setup() leaks into tests
+  -- that want to observe cold-start behaviour.
+  package.loaded['coraza-lsp'] = nil
+  package.loaded['coraza-lsp.lsp'] = nil
+  coraza_lsp = require('coraza-lsp')
+  lsp_mod    = require('coraza-lsp.lsp')
 end
 
 -- ── Unit tests (no binary required) ──────────────────────────────────────────
