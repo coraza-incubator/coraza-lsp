@@ -5,3 +5,7 @@ src/
 testdata/
 tsconfig.json
 **/*.map
+# Contributor docs — only README.md, CHANGELOG.md, LICENSE ship to Marketplace.
+PUBLISHING.md
+node_modules/.package-lock.json
+coraza-lsp*.vsix

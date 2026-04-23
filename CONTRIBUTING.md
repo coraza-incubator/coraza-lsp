@@ -56,7 +56,8 @@ Rules of thumb:
   Don't touch the extension version.
 - Bumping the VS Code extension → bump `editors/vscode/package.json` version,
   commit, tag `vscode-v<new>`, push tag. The workflow verifies the tag matches
-  the manifest before publishing.
+  the manifest before publishing. Full setup guide and secret configuration
+  in [`editors/vscode/PUBLISHING.md`](editors/vscode/PUBLISHING.md).
 - Both changed → two separate commits and two separate tags. This keeps
   release notes scoped and lets downstream users pin.
 

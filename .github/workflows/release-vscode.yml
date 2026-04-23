@@ -23,12 +23,19 @@ jobs:
   publish:
     name: Publish VS Code extension
     runs-on: ubuntu-latest
+    env:
+      # Secrets are surfaced as env vars so step-level `if:` can check presence
+      # without violating GitHub Actions' "secrets can't be read from if:" rule.
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: "npm"
+          cache-dependency-path: editors/vscode/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -43,25 +50,40 @@ jobs:
           TAG="${GITHUB_REF_NAME#vscode-v}"
           PKG=$(jq -r .version editors/vscode/package.json)
           if [ "$TAG" != "$PKG" ]; then
-            echo "Tag $GITHUB_REF_NAME (parsed as $TAG) does not match package.json version $PKG" >&2
+            echo "::error::Tag $GITHUB_REF_NAME (parsed as $TAG) does not match editors/vscode/package.json version $PKG"
             exit 1
           fi
 
-      - name: Package extension
-        run: npx vsce package
+      - name: Package extension (.vsix)
+        run: npx --yes @vscode/vsce package --out coraza-lsp.vsix
         working-directory: editors/vscode
 
       - name: Publish to VS Code Marketplace
-        # Skip publish when the secret isn't set — the .vsix artifact is still
-        # attached to the GitHub release so someone with the secret can upload.
-        if: ${{ env.VSCE_PAT != '' }}
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: npx vsce publish --pat "$VSCE_PAT"
+        if: env.VSCE_PAT != ''
+        run: npx --yes @vscode/vsce publish --packagePath coraza-lsp.vsix --pat "$VSCE_PAT"
         working-directory: editors/vscode
+
+      - name: Warn if VSCE_PAT is missing
+        if: env.VSCE_PAT == ''
+        run: |
+          echo "::warning::VSCE_PAT secret is not set — skipping Marketplace publish."
+          echo "Add it via: gh secret set VSCE_PAT --repo ${{ github.repository }}"
+          echo "The .vsix is still attached to the GitHub release below so it can be published manually."
+
+      - name: Publish to Open VSX Registry
+        if: env.OVSX_PAT != ''
+        run: npx --yes ovsx publish coraza-lsp.vsix --pat "$OVSX_PAT"
+        working-directory: editors/vscode
+
+      - name: Warn if OVSX_PAT is missing
+        if: env.OVSX_PAT == ''
+        run: |
+          echo "::warning::OVSX_PAT secret is not set — skipping Open VSX publish."
+          echo "Open VSX serves VSCodium, Gitpod, code-server and other OSS editors."
+          echo "Create a token at https://open-vsx.org/user-settings/tokens"
 
       - name: Attach .vsix to GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          files: editors/vscode/*.vsix
+          files: editors/vscode/coraza-lsp.vsix
           generate_release_notes: true
