@@ -6,22 +6,24 @@
 package definition
 
 import (
-	"os"
 	"path/filepath"
 	"strings"
 
 	protocol_3_16 "github.com/tliron/glsp/protocol_3_16"
 
 	"github.com/coraza-incubator/coraza-lsp/internal/parser"
+	"github.com/coraza-incubator/coraza-lsp/internal/vfs"
 )
 
 // Resolve returns the definition location(s) for the element at the given position.
-// Returns nil when no definition is available.
+// Returns nil when no definition is available. fs is consulted to verify that
+// the targets of Include directives exist; pass vfs.OSFileSystem() for the
+// CLI server or an embedder-provided FileSystem for sandboxed deployments.
 //
 // Supported cases:
 //  1. Cursor on a skipAfter: value → SecMarker in the same file
 //  2. Cursor on an Include path → the included file URI
-func Resolve(f *parser.File, line, char int, docURI string) []protocol_3_16.Location {
+func Resolve(filesys vfs.FileSystem, f *parser.File, line, char int, docURI string) []protocol_3_16.Location {
 	node := f.NodeAtPosition(line, char)
 	if node == nil {
 		return nil
@@ -33,7 +35,7 @@ func Resolve(f *parser.File, line, char int, docURI string) []protocol_3_16.Loca
 		if n.Path == "" {
 			return nil
 		}
-		uri := resolveIncludePath(n.Path, docURI)
+		uri := resolveIncludePath(filesys, n.Path, docURI)
 		if uri == "" {
 			return nil
 		}
@@ -80,12 +82,12 @@ func resolveInRule(rule *parser.RuleNode, f *parser.File, line, char int) []prot
 
 // resolveIncludePath converts an Include path to a file URI.
 // baseURI is the URI of the document containing the Include directive.
-func resolveIncludePath(path, baseURI string) string {
+func resolveIncludePath(filesys vfs.FileSystem, path, baseURI string) string {
 	if strings.HasPrefix(path, "file://") {
 		return path
 	}
 	if filepath.IsAbs(path) {
-		if fileExists(path) {
+		if fileExists(filesys, path) {
 			return "file://" + path
 		}
 		return ""
@@ -96,14 +98,14 @@ func resolveIncludePath(path, baseURI string) string {
 		return ""
 	}
 	resolved := filepath.Join(baseDir, path)
-	if fileExists(resolved) {
+	if fileExists(filesys, resolved) {
 		return "file://" + resolved
 	}
 	return ""
 }
 
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
+func fileExists(filesys vfs.FileSystem, path string) bool {
+	_, err := filesys.Stat(path)
 	return err == nil
 }
 

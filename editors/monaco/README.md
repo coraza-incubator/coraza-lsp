@@ -90,3 +90,58 @@ When running in a web browser, ensure the server's WebSocket endpoint is accessi
 from the page's origin. For local development, starting on `localhost:7999` with no
 TLS is sufficient. For production, proxy via nginx/Caddy with appropriate CORS headers
 and TLS termination.
+
+## Embedding the language server in a Go application
+
+The setup above runs `coraza-lsp` as a separate process. If your application is
+already a Go HTTP server (typical for web tools that serve SecLang rules from a
+database), you can skip the subprocess and embed the language server in-process.
+This gives you authenticated WebSocket upgrade in your own handlers, full
+control over filesystem access, and no second binary to ship or supervise.
+
+```go
+import (
+    "net/http"
+
+    "github.com/gorilla/websocket"
+    "github.com/coraza-incubator/coraza-lsp/pkg/lsp"
+)
+
+func lspHandler(w http.ResponseWriter, r *http.Request) {
+    // 1. Authenticate the upgrade in your normal middleware chain — JWT,
+    //    session cookie, API key, whatever you already use. Reject before
+    //    upgrading so unauthorised clients never see a WebSocket.
+
+    upgrader := websocket.Upgrader{
+        CheckOrigin: func(r *http.Request) bool { /* same-origin check */ return true },
+    }
+    conn, err := upgrader.Upgrade(w, r, nil)
+    if err != nil {
+        return
+    }
+    defer conn.Close()
+
+    // 2. Build a per-connection FileSystem snapshot from your data source
+    //    (database, object storage, etc). The LSP cannot reach beyond it.
+    files := loadFilesForCurrentSession(r) // map[string][]byte
+    srv := lsp.New("my-app/1.0", lsp.WithFileSystem(lsp.NewMemFS(files)))
+
+    // 3. Drive the LSP over the upgraded connection. Blocks until the
+    //    client disconnects, then the per-session Server is GC'd.
+    srv.ServeWebSocket(conn)
+}
+```
+
+Key points:
+
+- `lsp.WithFileSystem` is **mandatory** for multi-tenant deployments. Without
+  it the server reads directly from the host's disk — fine for a CLI, dangerous
+  for a web app where one tenant's `Include` directive could read another
+  tenant's files.
+- One `*lsp.Server` per WebSocket connection is the recommended model. The
+  constructor is cheap, and per-connection isolation makes cross-tenant
+  leakage impossible by construction.
+- `lsp.NewMemFS(map[string][]byte)` is the easiest sandboxed FileSystem; for
+  custom storage backends, implement `lsp.FileSystem` directly.
+- See `pkg/lsp/embed_test.go` for an executable example that exercises the
+  full embedding API.

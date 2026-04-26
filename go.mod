@@ -3,8 +3,9 @@ module github.com/coraza-incubator/coraza-lsp
 go 1.25.0
 
 require (
-	github.com/corazawaf/coraza/v3 v3.4.0
+	github.com/corazawaf/coraza/v3 v3.5.0
 	github.com/fsnotify/fsnotify v1.9.0
+	github.com/gorilla/websocket v1.5.1
 	github.com/stretchr/testify v1.11.1
 	github.com/tliron/commonlog v0.2.18
 	github.com/tliron/glsp v0.2.2
@@ -16,7 +17,6 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/goccy/go-yaml v1.18.0 // indirect
-	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/gotnospirit/makeplural v0.0.0-20180622080156-a5f48d94d976 // indirect
 	github.com/gotnospirit/messageformat v0.0.0-20221001023931-dfe49f1eb092 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect

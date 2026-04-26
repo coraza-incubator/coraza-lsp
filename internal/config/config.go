@@ -15,12 +15,15 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/coraza-incubator/coraza-lsp/internal/vfs"
 )
 
 // DefaultFilename is the conventional name searched for at the workspace root.
@@ -159,17 +162,23 @@ func (c *Config) Validate() error {
 	return fmt.Errorf("invalid .coraza.json:\n  - %s", strings.Join(errs, "\n  - "))
 }
 
-// Load reads and parses the config at path. Returns (nil, nil) if the file
+// Load reads and parses the config at path using the OS filesystem. See
+// LoadFS for the embedder-friendly variant that takes an explicit FileSystem.
+func Load(path string) (*Config, error) {
+	return LoadFS(vfs.OSFileSystem(), path)
+}
+
+// LoadFS reads and parses the config at path. Returns (nil, nil) if the file
 // does not exist — a missing config is not an error. Returns a helpful parse
 // error if the file exists but is malformed.
 //
 // The loader tolerates JSONC-style `"//":` comment properties at any level
 // (the convention used by tsconfig.json, VS Code settings.json, etc.), so the
 // commented template written by `coraza-lsp init` round-trips cleanly.
-func Load(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
+func LoadFS(filesys vfs.FileSystem, path string) (*Config, error) {
+	data, err := filesys.ReadFile(path)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("reading %s: %w", path, err)
@@ -228,16 +237,25 @@ func stripCommentValues(v any) any {
 }
 
 // Discover walks from start up to the filesystem root looking for a
-// DefaultFilename. Returns the absolute path to the first one found, or ""
-// if none exists.
+// DefaultFilename, using the OS filesystem. See DiscoverFS for the
+// embedder-friendly variant that takes an explicit FileSystem.
 func Discover(start string) string {
+	return DiscoverFS(vfs.OSFileSystem(), start)
+}
+
+// DiscoverFS walks from start up to the filesystem root looking for a
+// DefaultFilename. Returns the absolute path to the first one found, or ""
+// if none exists. start is resolved via filepath.Abs first (a no-op for paths
+// that are already absolute, including the synthetic roots embedders typically
+// pass to MemFS).
+func DiscoverFS(filesys vfs.FileSystem, start string) string {
 	dir, err := filepath.Abs(start)
 	if err != nil {
-		return ""
+		dir = start
 	}
 	for {
 		candidate := filepath.Join(dir, DefaultFilename)
-		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
+		if info, err := filesys.Stat(candidate); err == nil && !info.IsDir() {
 			return candidate
 		}
 		parent := filepath.Dir(dir)

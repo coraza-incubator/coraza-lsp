@@ -2,7 +2,7 @@
 // Author: Juan Pablo Tosso <pablo@owasp.org>
 // SPDX-License-Identifier: Apache-2.0
 
-package server
+package lsp
 
 import (
 	"os"
@@ -14,7 +14,11 @@ import (
 
 	"github.com/coraza-incubator/coraza-lsp/internal/config"
 	"github.com/coraza-incubator/coraza-lsp/internal/parser"
+	"github.com/coraza-incubator/coraza-lsp/internal/vfs"
 )
+
+// testFS is the FileSystem used by indexWorkspace tests in this file.
+var testFS = vfs.OSFileSystem()
 
 func writeFile(t *testing.T, path, content string) {
 	t.Helper()
@@ -41,7 +45,7 @@ func TestIndexWorkspace_SniffsSecLang(t *testing.T) {
 	writeFile(t, filepath.Join(root, "rules", "notes.txt"),
 		`SecRule ARGS "@rx x" "id:2,phase:2,deny"`)
 
-	idx := indexWorkspace(root, []string{"**/*.conf"}, []string{"**/.git/**"})
+	idx := indexWorkspace(testFS, root, []string{"**/*.conf"}, []string{"**/.git/**"})
 	assert.Len(t, idx, 2, "expected two indexed SecLang files")
 
 	// Spot-check the parse worked.
@@ -60,7 +64,7 @@ func TestIndexWorkspace_RespectsIgnore(t *testing.T) {
 	writeFile(t, filepath.Join(root, ".git", "hidden.conf"),
 		`SecRule ARGS "@rx x" "id:3,phase:2,deny"`)
 
-	idx := indexWorkspace(root,
+	idx := indexWorkspace(testFS, root,
 		[]string{"**/*.conf"},
 		[]string{"**/deprecated/**", "**/.git/**"})
 
@@ -73,7 +77,7 @@ func TestIndexWorkspace_RespectsIgnore(t *testing.T) {
 
 func TestIndexWorkspace_EmptyRoot(t *testing.T) {
 	t.Parallel()
-	idx := indexWorkspace("", []string{"**/*.conf"}, nil)
+	idx := indexWorkspace(testFS, "", []string{"**/*.conf"}, nil)
 	assert.Empty(t, idx)
 }
 
