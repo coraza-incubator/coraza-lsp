@@ -2,7 +2,7 @@
 // Author: Juan Pablo Tosso <pablo@owasp.org>
 // SPDX-License-Identifier: Apache-2.0
 
-package server
+package lsp
 
 import (
 	"fmt"
@@ -38,12 +38,12 @@ func (s *Server) LoadConfig(workspaceRoot string, onError func(msg string)) {
 	defer s.cfgState.mu.Unlock()
 
 	s.cfgState.root = workspaceRoot
-	path := config.Discover(workspaceRoot)
+	path := config.DiscoverFS(s.fs, workspaceRoot)
 	s.cfgState.path = path
 
 	cfg := config.Default()
 	if path != "" {
-		parsed, err := config.Load(path)
+		parsed, err := config.LoadFS(s.fs, path)
 		if err != nil {
 			if onError != nil {
 				onError(fmt.Sprintf("coraza-lsp: %v", err))
@@ -65,7 +65,7 @@ func (s *Server) LoadConfig(workspaceRoot string, onError func(msg string)) {
 	// (initialize handler + the watcher goroutine). For large workspaces
 	// users can flip global:false to skip this cost.
 	if cfg.Global && workspaceRoot != "" {
-		idx := indexWorkspace(workspaceRoot, cfg.FilePatterns, cfg.Ignore)
+		idx := indexWorkspace(s.fs, workspaceRoot, cfg.FilePatterns, cfg.Ignore)
 		s.store.SetIndex(idx)
 	} else {
 		s.store.SetIndex(nil)

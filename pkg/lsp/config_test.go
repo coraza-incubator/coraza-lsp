@@ -2,7 +2,7 @@
 // Author: Juan Pablo Tosso <pablo@owasp.org>
 // SPDX-License-Identifier: Apache-2.0
 
-package server
+package lsp
 
 import (
 	"os"
@@ -19,9 +19,10 @@ import (
 )
 
 // newTestServer returns a minimal Server without the glsp scaffolding.
-// Enough to exercise cfgState and the diagnostic-options path.
+// Enough to exercise cfgState and the diagnostic-options path. Uses
+// OSFileSystem so existing temp-directory based tests keep working.
 func newTestServer() *Server {
-	return &Server{store: NewDocumentStore()}
+	return &Server{store: NewDocumentStore(), fs: OSFileSystem()}
 }
 
 func writeConfig(t *testing.T, dir, contents string) string {

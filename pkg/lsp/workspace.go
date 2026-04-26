@@ -2,15 +2,15 @@
 // Author: Juan Pablo Tosso <pablo@owasp.org>
 // SPDX-License-Identifier: Apache-2.0
 
-package server
+package lsp
 
 import (
 	"io/fs"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/coraza-incubator/coraza-lsp/internal/parser"
+	"github.com/coraza-incubator/coraza-lsp/internal/vfs"
 )
 
 // indexedFile is a parsed rule file that the user did not open in the editor.
@@ -29,12 +29,12 @@ type indexedFile struct {
 //
 // The scan is synchronous. Callers that care about UI responsiveness should
 // invoke it from a goroutine (LoadConfig does when Global is true).
-func indexWorkspace(root string, filePatterns, ignore []string) map[string]*indexedFile {
+func indexWorkspace(filesys vfs.FileSystem, root string, filePatterns, ignore []string) map[string]*indexedFile {
 	out := map[string]*indexedFile{}
 	if root == "" {
 		return out
 	}
-	_ = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+	_ = filesys.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d == nil {
 			return nil
 		}
@@ -50,10 +50,10 @@ func indexWorkspace(root string, filePatterns, ignore []string) map[string]*inde
 		if matchesAny(path, ignore, root) {
 			return nil
 		}
-		if !sniffsAsSecLang(path) {
+		if !sniffsAsSecLang(filesys, path) {
 			return nil
 		}
-		data, err := os.ReadFile(path)
+		data, err := filesys.ReadFile(path)
 		if err != nil {
 			return nil
 		}
@@ -105,8 +105,8 @@ func matchesAny(path string, globs []string, root string) bool {
 // sniffsAsSecLang reads the first ~4 KB of path and returns true iff it sees
 // a SecLang directive at the start of some non-comment line within the first
 // 20 lines. Keeps nginx/apache/etc. .conf files out of the index.
-func sniffsAsSecLang(path string) bool {
-	f, err := os.Open(path)
+func sniffsAsSecLang(filesys vfs.FileSystem, path string) bool {
+	f, err := filesys.Open(path)
 	if err != nil {
 		return false
 	}

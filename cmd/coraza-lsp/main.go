@@ -14,7 +14,7 @@ import (
 	"github.com/tliron/commonlog"
 	_ "github.com/tliron/commonlog/simple"
 
-	lspserver "github.com/coraza-incubator/coraza-lsp/internal/server"
+	lspserver "github.com/coraza-incubator/coraza-lsp/pkg/lsp"
 )
 
 // Build-time variables injected via -ldflags.

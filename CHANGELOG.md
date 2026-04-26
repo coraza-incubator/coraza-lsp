@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Public embedding API** at `pkg/lsp` (previously `internal/server`). Lets
+  Go applications embed the language server in-process — for example, a web
+  tool serving SecLang rules from a database that wants real LSP features in
+  a browser editor without spawning a subprocess.
+  - `lsp.New(version, opts...)` constructor with functional options.
+  - `(*Server).ServeWebSocket(*websocket.Conn)` drives the protocol over an
+    already-upgraded WebSocket so embedders can authenticate the upgrade in
+    their own HTTP handler.
+  - `lsp.FileSystem` interface + `lsp.WithFileSystem(fs)` option. Embedders
+    pass a sandboxed implementation (e.g. `lsp.NewMemFS(map[string][]byte{...})`)
+    so the LSP cannot read files outside the embedder's intended scope —
+    important when the host is multi-tenant. CLI behaviour is unchanged: the
+    default is `lsp.OSFileSystem()`.
+  - `config.LoadFS(fs, path)` and `config.DiscoverFS(fs, start)` accept an
+    explicit FileSystem; the original `config.Load`/`config.Discover` keep
+    working and now delegate to the OS-backed variants.
+
+### Changed
+
+- Bumped `github.com/corazawaf/coraza/v3` from v3.4.0 to v3.5.0. No diagnostic
+  output changes observed.
+
 - Project config file `.coraza.json` at the workspace root, with JSON Schema
   (`schema/coraza.schema.json`). Fields: `entrypoint`, `includePaths`,
   `global`, `filePatterns`, `ignore`, `diagnostics`. Comments via the

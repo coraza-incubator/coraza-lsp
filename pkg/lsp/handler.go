@@ -2,7 +2,7 @@
 // Author: Juan Pablo Tosso <pablo@owasp.org>
 // SPDX-License-Identifier: Apache-2.0
 
-package server
+package lsp
 
 import (
 	"encoding/json"
@@ -15,6 +15,7 @@ import (
 
 	"github.com/coraza-incubator/coraza-lsp/internal/config"
 
+	"github.com/gorilla/websocket"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 	glspserver "github.com/tliron/glsp/server"
@@ -36,20 +37,36 @@ type Server struct {
 	store     *DocumentStore
 	validator *analysis.Validator
 	glsp      *glspserver.Server
+	fs        FileSystem
 
 	// ctxMu guards ctx; captured from any handler call for async notifications.
 	ctxMu sync.RWMutex
 	ctx   *glsp.Context
 
 	// cfgState holds the live `.coraza.json` and its derived analysis options.
-	// See internal/server/config.go.
+	// See pkg/lsp/config.go.
 	cfgState configState
 }
 
-// New creates and wires up a new Server ready to call RunStdio / RunTCP / RunWebSocket.
-func New(version string) *Server {
+// New creates and wires up a new Server ready to call RunStdio / RunTCP /
+// RunWebSocket / ServeWebSocket.
+//
+// Pass options to customise behaviour:
+//   - WithFileSystem to inject a sandboxed FileSystem (required for embedders
+//     that host the LSP in a multi-tenant web application — without it the
+//     LSP reads directly from the host's disk).
+//
+// With no options the server behaves identically to previous releases: it
+// uses OSFileSystem() and operates against the real disk.
+func New(version string, opts ...Option) *Server {
+	o := defaultOptions()
+	for _, opt := range opts {
+		opt(o)
+	}
+
 	s := &Server{
 		store: NewDocumentStore(),
+		fs:    o.fs,
 	}
 
 	// Debounced Coraza oracle — fires 300 ms after the last change and pushes diagnostics.
@@ -90,8 +107,23 @@ func (s *Server) RunStdio() error { return s.glsp.RunStdio() }
 // RunTCP starts the LSP server on the given TCP address (e.g. "127.0.0.1:7998").
 func (s *Server) RunTCP(addr string) error { return s.glsp.RunTCP(addr) }
 
-// RunWebSocket starts the LSP server on the given WebSocket address.
+// RunWebSocket starts the LSP server on the given WebSocket address. It binds
+// its own listener and upgrades incoming HTTP requests. Embedders that already
+// own an HTTP router (and want to authenticate the upgrade themselves) should
+// upgrade in their own handler and call ServeWebSocket on the resulting
+// *websocket.Conn instead.
 func (s *Server) RunWebSocket(addr string) error { return s.glsp.RunWebSocket(addr) }
+
+// ServeWebSocket drives the LSP protocol over an already-upgraded WebSocket
+// connection. It blocks until the client disconnects. Use this from an
+// authenticated HTTP handler:
+//
+//	upgrader := websocket.Upgrader{...}
+//	conn, err := upgrader.Upgrade(w, r, nil)
+//	if err != nil { return }
+//	defer conn.Close()
+//	lspsrv.ServeWebSocket(conn)
+func (s *Server) ServeWebSocket(conn *websocket.Conn) { s.glsp.ServeWebSocket(conn) }
 
 // saveCtx stores the most-recent glsp.Context for async notifications.
 func (s *Server) saveCtx(ctx *glsp.Context) {
@@ -330,6 +362,7 @@ func (s *Server) definitionHandler(ctx *glsp.Context, params *protocol.Definitio
 		return nil, nil
 	}
 	locs := definition.Resolve(
+		s.fs,
 		doc.AST,
 		int(params.Position.Line),
 		int(params.Position.Character),

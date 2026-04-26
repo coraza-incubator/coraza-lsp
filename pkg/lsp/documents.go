@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package server implements the LSP server handler and document store.
-package server
+package lsp
 
 import (
 	"sync"
