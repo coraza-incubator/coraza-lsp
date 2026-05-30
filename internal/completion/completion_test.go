@@ -443,7 +443,12 @@ func TestGetCompletions_CtlKey_Empty(t *testing.T) {
 	labels := itemLabels(items)
 	assert.Contains(t, labels, "ruleEngine")
 	assert.Contains(t, labels, "requestBodyProcessor")
-	assert.Contains(t, labels, "noAuditLog")
+	// ruleRemoveByMsg / ruleRemoveTargetByMsg are real Coraza v3.5.0 ctl
+	// sub-options used by CRS; they must be offered for completion.
+	assert.Contains(t, labels, "ruleRemoveByMsg")
+	assert.Contains(t, labels, "ruleRemoveTargetByMsg")
+	// `noAuditLog` is NOT a Coraza ctl sub-option and must NOT be offered.
+	assert.NotContains(t, labels, "noAuditLog")
 }
 
 func TestGetCompletions_CtlKey_Prefix(t *testing.T) {
@@ -472,16 +477,17 @@ func TestGetCompletions_CtlKey_InsertTextHasEquals(t *testing.T) {
 
 func TestGetCompletions_CtlKey_NoValueOptionHasNoEquals(t *testing.T) {
 	t.Parallel()
-	// noAuditLog takes no value — insert text must NOT include =.
-	items := GetCompletions(ContextCtlKey, "noAudit")
+	// Coraza v3.5.0 has no value-less ctl sub-options (the former `noAuditLog`
+	// entry was removed because Coraza does not register it). This test now
+	// guards the inverse invariant: every offered ctl key that is NOT a
+	// NoValue option must insert "KEY=" so the cursor lands after the '='.
+	items := GetCompletions(ContextCtlKey, "")
+	require.NotEmpty(t, items)
 	for _, item := range items {
-		if item.Label == "noAuditLog" {
-			require.NotNil(t, item.InsertText)
-			assert.Equal(t, "noAuditLog", *item.InsertText)
-			return
-		}
+		require.NotNil(t, item.InsertText, "ctl key %q must have InsertText", item.Label)
+		assert.Equal(t, item.Label+"=", *item.InsertText,
+			"value-taking ctl key %q should insert %q=", item.Label, item.Label)
 	}
-	t.Fatal("noAuditLog not found in ctl key completions")
 }
 
 func TestGetCompletions_CtlValue_RuleEngine(t *testing.T) {

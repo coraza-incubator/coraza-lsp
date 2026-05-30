@@ -11,10 +11,17 @@ type CtlOption struct {
 	Key     string
 	Summary string
 	Values  []string // valid enum values; nil = free-form input accepted
-	NoValue bool     // true for options that take no = and no value (e.g. noAuditLog)
+	NoValue bool     // true for options that take no = and no value
 }
 
 // CtlOptions lists all recognised ctl sub-options in canonical casing.
+//
+// This set is the authoritative one accepted by Coraza v3.5.0's ctl action,
+// taken from the string switch in internal/actions/ctl.go (Init: the `switch
+// action` block, ~lines 433-475). Any name outside this set makes Coraza fail
+// with `unknown ctl action %q`, so adding speculative options here would
+// suppress a correct unknown-ctl-option diagnostic. Note: ModSecurity's
+// `ctl:noAuditLog` is intentionally absent — Coraza does NOT register it.
 var CtlOptions = []CtlOption{
 	{
 		Key:     "ruleEngine",
@@ -26,16 +33,33 @@ var CtlOptions = []CtlOption{
 		Summary: "Remove a rule (or ID range) for this transaction, e.g. 1001 or 1000-1999",
 	},
 	{
+		Key:     "ruleRemoveByMsg",
+		Summary: "Remove all rules whose msg matches the given value for this transaction",
+	},
+	{
 		Key:     "ruleRemoveByTag",
 		Summary: "Remove all rules with the given tag for this transaction",
 	},
 	{
 		Key:     "ruleRemoveTargetById",
-		Summary: "Remove a specific inspection target from a rule by ID (format: id/VARIABLE[/key])",
+		Summary: "Remove a specific inspection target from a rule by ID (format: id;VARIABLE)",
+	},
+	{
+		Key:     "ruleRemoveTargetByMsg",
+		Summary: "Remove a specific inspection target from rules matching a msg (format: msg;VARIABLE)",
 	},
 	{
 		Key:     "ruleRemoveTargetByTag",
-		Summary: "Remove a specific inspection target from all rules with a tag (format: tag/VARIABLE[/key])",
+		Summary: "Remove a specific inspection target from all rules with a tag (format: tag;VARIABLE)",
+	},
+	{
+		Key:     "auditEngine",
+		Summary: "Override the audit engine setting for this transaction",
+		Values:  []string{"On", "Off", "RelevantOnly"},
+	},
+	{
+		Key:     "auditLogParts",
+		Summary: "Override which audit log parts are recorded for this transaction (e.g. +E)",
 	},
 	{
 		Key:     "requestBodyAccess",
@@ -66,14 +90,24 @@ var CtlOptions = []CtlOption{
 		Summary: "Maximum response body size in bytes for this transaction",
 	},
 	{
-		Key:     "auditEngine",
-		Summary: "Override the audit engine setting for this transaction",
-		Values:  []string{"On", "Off", "RelevantOnly"},
+		Key:     "responseBodyProcessor",
+		Summary: "Force a specific response body parser for this transaction",
+		Values:  []string{"URLENCODED", "MULTIPART", "XML", "JSON"},
 	},
 	{
-		Key:     "noAuditLog",
-		Summary: "Suppress the audit log entry for this transaction (no value required)",
-		NoValue: true,
+		Key:     "forceResponseBodyVariable",
+		Summary: "Force population of RESPONSE_BODY even without a recognised Content-Type",
+		Values:  []string{"On", "Off"},
+	},
+	{
+		Key:     "hashEngine",
+		Summary: "Enable or disable the hash engine for this transaction",
+		Values:  []string{"On", "Off"},
+	},
+	{
+		Key:     "hashEnforcement",
+		Summary: "Enable or disable hash enforcement for this transaction",
+		Values:  []string{"On", "Off"},
 	},
 	{
 		Key:     "debugLogLevel",

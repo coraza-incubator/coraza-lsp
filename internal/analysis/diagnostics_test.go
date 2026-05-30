@@ -1957,8 +1957,22 @@ func TestAnalyze_CtlValidation(t *testing.T) {
 			wantCodes: nil,
 		},
 		{
-			name:      "valid ctl noAuditLog (no value)",
+			// Coraza v3.5.0 does NOT register a `noAuditLog` ctl sub-option; the
+			// ctl action's switch rejects it as `unknown ctl action "noAuditLog"`.
+			// It was removed from the KB CtlOptions, so the LSP must flag it.
+			name:      "unknown ctl noAuditLog (not a Coraza ctl option)",
 			src:       `SecAction "id:1,phase:1,pass,ctl:noAuditLog"`,
+			wantCodes: []string{CodeUnknownCtlOption},
+		},
+		{
+			// New in this KB revision — used by real CRS rules.
+			name:      "valid ctl ruleRemoveByMsg (free-form value)",
+			src:       `SecAction "id:1,phase:1,pass,ctl:ruleRemoveByMsg=SQLi"`,
+			wantCodes: nil,
+		},
+		{
+			name:      "valid ctl ruleRemoveTargetByMsg (free-form value)",
+			src:       `SecAction "id:1,phase:1,pass,ctl:ruleRemoveTargetByMsg=SQLi;ARGS:x"`,
 			wantCodes: nil,
 		},
 		{
