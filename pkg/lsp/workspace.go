@@ -6,12 +6,22 @@ package lsp
 
 import (
 	"io/fs"
+	"log"
 	"path/filepath"
 	"strings"
+
+	"github.com/bmatcuk/doublestar/v4"
 
 	"github.com/coraza-incubator/coraza-lsp/internal/parser"
 	"github.com/coraza-incubator/coraza-lsp/internal/vfs"
 )
+
+// maxIndexedFileSize caps how many bytes a single workspace file may have
+// before indexWorkspace skips it. Global indexing happens automatically (the
+// user never opened the file), so a stray multi-hundred-MB file must not be
+// slurped into memory and parsed. Files above this size are skipped with a log
+// note.
+const maxIndexedFileSize = 4 << 20 // 4 MiB
 
 // indexedFile is a parsed rule file that the user did not open in the editor.
 // Only populated when config.Global is true. Unlike Document, it holds just
@@ -50,6 +60,12 @@ func indexWorkspace(filesys vfs.FileSystem, root string, filePatterns, ignore []
 		if matchesAny(path, ignore, root) {
 			return nil
 		}
+		// Skip pathologically large files: global indexing is automatic, so a
+		// stray huge .conf must not be read whole into memory and parsed.
+		if info, ierr := d.Info(); ierr == nil && info.Size() > maxIndexedFileSize {
+			log.Printf("coraza-lsp: skipping %s from workspace index (%d bytes > %d)", path, info.Size(), maxIndexedFileSize)
+			return nil
+		}
 		if !sniffsAsSecLang(filesys, path) {
 			return nil
 		}
@@ -68,9 +84,17 @@ func indexWorkspace(filesys vfs.FileSystem, root string, filePatterns, ignore []
 }
 
 // matchesAny reports whether path matches any of the given globs, relative to
-// root. Uses filepath.Match — supports `*` and `?` but not `**`. `**/*.conf`
-// is normalised to `*.conf` applied at every depth (the walk visits every
-// path so this is equivalent).
+// root. Globs use doublestar semantics (github.com/bmatcuk/doublestar): `*`
+// and `?` within a path segment, `**` to match across path separators, and
+// `{a,b}` brace alternation — matching the behaviour documented for
+// `filePatterns`/`ignore` in internal/config. Matching is always performed on
+// the slash-separated path relative to root so patterns like `**/*.conf` and
+// `**/deprecated/**` work regardless of OS.
+//
+// Patterns are matched against both the relative path and the base name, so a
+// bare `*.conf` (no leading `**/`) still matches a nested file as the docs
+// imply. Malformed patterns are skipped (they cannot match) rather than
+// silently aborting the whole walk.
 func matchesAny(path string, globs []string, root string) bool {
 	if len(globs) == 0 {
 		return false
@@ -80,21 +104,21 @@ func matchesAny(path string, globs []string, root string) bool {
 		rel = path
 	}
 	rel = filepath.ToSlash(rel)
-	base := filepath.Base(path)
+	base := filepath.ToSlash(filepath.Base(path))
 	for _, glob := range globs {
 		g := filepath.ToSlash(glob)
-		// Strip a leading "**/" so the pattern matches at any depth.
-		flat := strings.TrimPrefix(g, "**/")
-		if ok, _ := filepath.Match(flat, base); ok {
+		if !doublestar.ValidatePattern(g) {
+			// Malformed glob: cannot match anything; ignore it so one bad
+			// entry can't short-circuit indexing.
+			continue
+		}
+		if ok, _ := doublestar.Match(g, rel); ok {
 			return true
 		}
-		if ok, _ := filepath.Match(g, rel); ok {
-			return true
-		}
-		// "**/deprecated/**" on directory paths.
-		if strings.Contains(g, "/**") {
-			prefix := strings.TrimSuffix(strings.TrimPrefix(g, "**/"), "/**")
-			if prefix != "" && strings.Contains("/"+rel+"/", "/"+prefix+"/") {
+		// A pattern without a `**`/`/` prefix (e.g. "*.conf") is conventionally
+		// understood to apply at any depth; match it against the base name too.
+		if !strings.Contains(g, "/") {
+			if ok, _ := doublestar.Match(g, base); ok {
 				return true
 			}
 		}

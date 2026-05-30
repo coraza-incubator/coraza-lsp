@@ -3,6 +3,7 @@ module github.com/coraza-incubator/coraza-lsp
 go 1.25.0
 
 require (
+	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/corazawaf/coraza/v3 v3.5.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gorilla/websocket v1.5.1

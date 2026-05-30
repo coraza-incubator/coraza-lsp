@@ -75,6 +75,48 @@ func TestIndexWorkspace_RespectsIgnore(t *testing.T) {
 	}
 }
 
+// --- matchesAny (doublestar glob semantics) ---------------------------------
+
+func TestMatchesAny_Doublestar(t *testing.T) {
+	t.Parallel()
+	root := "/ws"
+	cases := []struct {
+		name  string
+		path  string
+		globs []string
+		want  bool
+	}{
+		{"doublestar matches nested", "/ws/a/b/c.conf", []string{"**/*.conf"}, true},
+		{"doublestar matches top-level", "/ws/c.conf", []string{"**/*.conf"}, true},
+		{"non-matching extension", "/ws/a/b/c.txt", []string{"**/*.conf"}, false},
+		{"bare basename glob matches at depth", "/ws/a/b/c.conf", []string{"*.conf"}, true},
+		{"brace alternation", "/ws/a/x.modsec", []string{"**/*.{conf,modsec}"}, true},
+		{"multi doublestar", "/ws/a/b/c/d.conf", []string{"**/**/*.conf"}, true},
+		{"anchored subdir does not match other depth", "/ws/a/rules/foo.conf", []string{"rules/*.conf"}, false},
+		{"anchored subdir matches at root", "/ws/rules/foo.conf", []string{"rules/*.conf"}, true},
+		{"ignore deprecated tree", "/ws/x/deprecated/old.conf", []string{"**/deprecated/**"}, true},
+		{"ignore git tree", "/ws/.git/hidden.conf", []string{"**/.git/**"}, true},
+		{"malformed glob is skipped", "/ws/a.conf", []string{"[", "**/*.conf"}, true},
+		{"empty globs", "/ws/a.conf", nil, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := matchesAny(filepath.FromSlash(tc.path), tc.globs, filepath.FromSlash(root))
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestIndexWorkspace_NestedDoublestar(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "a", "b", "c.conf"),
+		`SecRule ARGS "@rx x" "id:1,phase:2,deny"`)
+
+	idx := indexWorkspace(testFS, root, []string{"**/*.conf"}, nil)
+	assert.Len(t, idx, 1, "**/*.conf must match a deeply nested file")
+}
+
 func TestIndexWorkspace_EmptyRoot(t *testing.T) {
 	t.Parallel()
 	idx := indexWorkspace(testFS, "", []string{"**/*.conf"}, nil)

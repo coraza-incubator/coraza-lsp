@@ -5,10 +5,13 @@
 package lsp
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/coraza-incubator/coraza-lsp/internal/parser"
 )
 
 func TestDocumentStore_OpenAndGet(t *testing.T) {
@@ -100,19 +103,37 @@ func TestDocumentStore_ConcurrentAccess(t *testing.T) {
 	t.Parallel()
 	s := NewDocumentStore()
 	const n = 50
-	done := make(chan struct{}, n*2)
+	// Mix every mutating and reading entry point on overlapping URIs so the
+	// race detector exercises the read-copy-out contract on AllDocs/All/AllASTs
+	// and the cross-file id cache (SetIndex/CrossFileIDs) interleaved with
+	// Open/Change/Close.
+	const workers = 9
+	done := make(chan struct{}, n*workers)
+	src := `SecRule ARGS "@rx x" "id:%d,phase:2,deny"`
 
 	for i := 0; i < n; i++ {
+		i := i
+		go func() { s.Open("file:///a.conf", "SecRuleEngine On", int32(i)); done <- struct{}{} }()
 		go func() {
-			s.Open("file:///a.conf", "SecRuleEngine On", 1)
+			s.Change("file:///b.conf", "SecRule ARGS \"@rx y\" \"id:42,phase:2,deny\"", int32(i))
 			done <- struct{}{}
 		}()
+		go func() { s.Close("file:///a.conf"); done <- struct{}{} }()
+		go func() { s.Get("file:///a.conf"); done <- struct{}{} }()
+		go func() { _ = s.AllDocs(); done <- struct{}{} }()
+		go func() { _ = s.All(); done <- struct{}{} }()
+		go func() { _ = s.AllASTs(); done <- struct{}{} }()
+		go func() { _ = s.CrossFileIDs(); done <- struct{}{} }()
 		go func() {
-			s.Get("file:///a.conf")
+			f := parser.Parse("file:///idx.conf", fmt.Sprintf(src, 42))
+			s.SetIndex(map[string]*indexedFile{
+				"file:///idx.conf": {Path: "/idx.conf", AST: f},
+				"file:///b.conf":   {Path: "/b.conf", AST: f},
+			})
 			done <- struct{}{}
 		}()
 	}
-	for i := 0; i < n*2; i++ {
+	for i := 0; i < n*workers; i++ {
 		<-done
 	}
 }

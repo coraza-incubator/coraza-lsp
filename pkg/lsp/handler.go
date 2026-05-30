@@ -5,8 +5,9 @@
 package lsp
 
 import (
-	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -101,21 +102,82 @@ func New(version string, opts ...Option) *Server {
 	return s
 }
 
+// maxWSMessageBytes bounds the size of a single inbound WebSocket message so a
+// hostile client can't force an unbounded allocation. Generous enough for very
+// large rule files, bounded enough to deny a memory-exhaustion DoS.
+//
+// NOTE: this cap only applies to the WebSocket transport, where gorilla exposes
+// Conn.SetReadLimit. The TCP transport goes through glsp's hardcoded
+// jsonrpc2.VSCodeObjectCodec, which reads a client-supplied Content-Length and
+// allocates that many bytes with no upstream hook to bound it; we do not fork
+// glsp. The mitigation there is to bind TCP/WS to loopback only (see
+// cmd/coraza-lsp). Both transports are documented as loopback-dev-only.
+const maxWSMessageBytes = 32 << 20 // 32 MiB
+
 // RunStdio starts the LSP server over stdin/stdout.
 func (s *Server) RunStdio() error { return s.glsp.RunStdio() }
 
 // RunTCP starts the LSP server on the given TCP address (e.g. "127.0.0.1:7998").
+//
+// SECURITY: there is no per-message size limit on this transport — glsp's
+// jsonrpc2 codec honours a client-supplied Content-Length with no upstream
+// hook to bound it (see maxWSMessageBytes). Bind to loopback only and treat
+// this transport as dev-only.
 func (s *Server) RunTCP(addr string) error { return s.glsp.RunTCP(addr) }
 
-// RunWebSocket starts the LSP server on the given WebSocket address. It binds
-// its own listener and upgrades incoming HTTP requests. Embedders that already
-// own an HTTP router (and want to authenticate the upgrade themselves) should
+// RunWebSocket starts the LSP server on the given WebSocket address. Unlike the
+// bundled glsp entrypoint (which accepts any Origin and sets no read limit),
+// this owns the HTTP upgrade so it can:
+//   - enforce a strict same-origin / no-Origin policy (rejecting cross-origin
+//     browser connections), and
+//   - cap the inbound message size via Conn.SetReadLimit.
+//
+// Native editor clients send no Origin header and are accepted; browser pages
+// send one and are rejected unless it matches the listen host. Embedders that
+// already own an HTTP router (and authenticate the upgrade themselves) should
 // upgrade in their own handler and call ServeWebSocket on the resulting
 // *websocket.Conn instead.
-func (s *Server) RunWebSocket(addr string) error { return s.glsp.RunWebSocket(addr) }
+func (s *Server) RunWebSocket(addr string) error {
+	upgrader := websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool { return checkWSOrigin(r) },
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Printf("coraza-lsp: websocket upgrade failed: %v", err)
+			return
+		}
+		defer conn.Close()
+		s.ServeWebSocket(conn)
+	})
+	server := &http.Server{Addr: addr, Handler: mux}
+	log.Printf("coraza-lsp: listening for WebSocket connections on %s", addr)
+	return server.ListenAndServe()
+}
+
+// checkWSOrigin rejects cross-origin browser connections. Requests with no
+// Origin header (native editors, CLI tools) are allowed. Requests whose Origin
+// host doesn't match the request Host are rejected. This is intentionally
+// strict: the WS transport is loopback-dev-only and must not be drivable from
+// an arbitrary web page (which could otherwise reach the file-read primitive
+// in the analyser).
+func checkWSOrigin(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true // non-browser client
+	}
+	u, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+	// Allow only when the Origin host matches the host we're serving on.
+	return strings.EqualFold(u.Host, r.Host)
+}
 
 // ServeWebSocket drives the LSP protocol over an already-upgraded WebSocket
-// connection. It blocks until the client disconnects. Use this from an
+// connection. It applies a read limit (maxWSMessageBytes) to bound inbound
+// allocations, then blocks until the client disconnects. Use this from an
 // authenticated HTTP handler:
 //
 //	upgrader := websocket.Upgrader{...}
@@ -123,7 +185,10 @@ func (s *Server) RunWebSocket(addr string) error { return s.glsp.RunWebSocket(ad
 //	if err != nil { return }
 //	defer conn.Close()
 //	lspsrv.ServeWebSocket(conn)
-func (s *Server) ServeWebSocket(conn *websocket.Conn) { s.glsp.ServeWebSocket(conn) }
+func (s *Server) ServeWebSocket(conn *websocket.Conn) {
+	conn.SetReadLimit(maxWSMessageBytes)
+	s.glsp.ServeWebSocket(conn)
+}
 
 // saveCtx stores the most-recent glsp.Context for async notifications.
 func (s *Server) saveCtx(ctx *glsp.Context) {
@@ -264,8 +329,14 @@ func (s *Server) didChange(ctx *glsp.Context, params *protocol.DidChangeTextDocu
 	if len(params.ContentChanges) == 0 {
 		return nil
 	}
-	// Full-sync: the last event always carries the entire document text.
-	text := extractFullText(params.ContentChanges[len(params.ContentChanges)-1])
+	// Full-sync: the last event always carries the entire document text. If
+	// the client misbehaves and sends an incremental change (or a value we
+	// can't interpret), skip the update rather than overwriting the document
+	// with a fragment or an empty string.
+	text, ok := extractFullText(params.ContentChanges[len(params.ContentChanges)-1])
+	if !ok {
+		return nil
+	}
 	uri := string(params.TextDocument.URI)
 	doc := s.store.Change(uri, text, params.TextDocument.Version)
 	s.pushDiagnostics(ctx, uri, doc)
@@ -311,7 +382,7 @@ func (s *Server) completionHandler(ctx *glsp.Context, params *protocol.Completio
 	line := int(params.Position.Line)
 	char := int(params.Position.Character)
 
-	lines := splitLines(doc.Content)
+	lines := doc.Lines
 	if line >= len(lines) {
 		return nil, nil
 	}
@@ -430,16 +501,34 @@ func splitLines(s string) []string {
 	return lines
 }
 
-// extractFullText extracts the text from a TextDocumentContentChangeEvent.
-// Under full-sync, every event is a "whole" event with only a Text field.
-func extractFullText(raw any) string {
-	b, err := json.Marshal(raw)
-	if err != nil {
-		return ""
+// extractFullText extracts the whole-document text from a content-change
+// event. The server advertises TextDocumentSyncKindFull, so glsp has already
+// unmarshalled each change into a concrete typed value (see
+// DidChangeTextDocumentParams.UnmarshalJSON): a "whole" event when no Range is
+// present, otherwise an incremental event with a Range.
+//
+// A direct type switch avoids the JSON marshal/unmarshal round-trip that used
+// to run on every keystroke. The second return is false when the change cannot
+// be treated as a full-document replacement (a mis-typed value, or an
+// incremental change carrying a Range) so the caller can skip the store update
+// rather than clobbering the document with a fragment or an empty string.
+func extractFullText(raw any) (string, bool) {
+	switch v := raw.(type) {
+	case protocol.TextDocumentContentChangeEventWhole:
+		return v.Text, true
+	case *protocol.TextDocumentContentChangeEventWhole:
+		return v.Text, true
+	case protocol.TextDocumentContentChangeEvent:
+		// Only a full replacement when no Range is present.
+		if v.Range == nil {
+			return v.Text, true
+		}
+		return "", false
+	case *protocol.TextDocumentContentChangeEvent:
+		if v.Range == nil {
+			return v.Text, true
+		}
+		return "", false
 	}
-	var whole protocol.TextDocumentContentChangeEventWhole
-	if err := json.Unmarshal(b, &whole); err != nil {
-		return ""
-	}
-	return whole.Text
+	return "", false
 }

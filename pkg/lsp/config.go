@@ -34,12 +34,7 @@ type configState struct {
 // A missing config is not an error — the server falls back to defaults.
 // Errors in the file are surfaced via onError (typically a window/showMessage).
 func (s *Server) LoadConfig(workspaceRoot string, onError func(msg string)) {
-	s.cfgState.mu.Lock()
-	defer s.cfgState.mu.Unlock()
-
-	s.cfgState.root = workspaceRoot
 	path := config.DiscoverFS(s.fs, workspaceRoot)
-	s.cfgState.path = path
 
 	cfg := config.Default()
 	if path != "" {
@@ -57,15 +52,28 @@ func (s *Server) LoadConfig(workspaceRoot string, onError func(msg string)) {
 		}
 	}
 
+	// Install the parsed config + derived options under a short write lock.
+	// We snapshot the bits indexWorkspace needs (root, patterns) and release
+	// the lock BEFORE walking the workspace — otherwise the (potentially
+	// multi-second) index build would block every concurrent request, since
+	// Config()/analysisOptions() are on the hot path of every diagnostic run.
+	s.cfgState.mu.Lock()
+	s.cfgState.root = workspaceRoot
+	s.cfgState.path = path
 	s.cfgState.cfg = cfg
 	s.cfgState.opts = optionsFromConfig(cfg)
+	doIndex := cfg.Global && workspaceRoot != ""
+	patterns := cfg.FilePatterns
+	ignore := cfg.Ignore
+	s.cfgState.mu.Unlock()
 
-	// Kick off (or clear) the workspace index. Runs synchronously because
-	// LoadConfig is already called from a background-friendly place
-	// (initialize handler + the watcher goroutine). For large workspaces
-	// users can flip global:false to skip this cost.
-	if cfg.Global && workspaceRoot != "" {
-		idx := indexWorkspace(s.fs, workspaceRoot, cfg.FilePatterns, cfg.Ignore)
+	// Build (or clear) the workspace index WITHOUT holding the config lock.
+	// SetIndex has its own mutex and swaps the result in atomically. The scan
+	// is synchronous here because LoadConfig is already called from a
+	// background-friendly place (the initialize handler + the watcher
+	// goroutine), and callers expect the index to be ready on return.
+	if doIndex {
+		idx := indexWorkspace(s.fs, workspaceRoot, patterns, ignore)
 		s.store.SetIndex(idx)
 	} else {
 		s.store.SetIndex(nil)
@@ -77,6 +85,15 @@ func (s *Server) Config() config.Config {
 	s.cfgState.mu.RLock()
 	defer s.cfgState.mu.RUnlock()
 	return s.cfgState.cfg
+}
+
+// configRoot returns the workspace root the config is currently scoped to,
+// read under the mutex. watchLoop must use this rather than touching
+// s.cfgState.root directly, which LoadConfig writes under the lock.
+func (s *Server) configRoot() string {
+	s.cfgState.mu.RLock()
+	defer s.cfgState.mu.RUnlock()
+	return s.cfgState.root
 }
 
 // analysisOptions returns the derived analysis.Options. Used on every
@@ -93,7 +110,13 @@ func optionsFromConfig(cfg config.Config) analysis.Options {
 	}
 	return analysis.Options{
 		SeverityOverrides: cfg.Diagnostics,
-		EntrypointAware:   cfg.Entrypoint != "",
+		// EntrypointAware is populated for forward-compatibility but is NOT
+		// yet consumed by the analyser (no cross-file severity promotion, no
+		// resolvability check) — see the doc on analysis.Options.EntrypointAware.
+		// Wiring it up is a larger change tracked separately; we set it from a
+		// plain non-empty check so the field reflects intent without implying
+		// behaviour that doesn't exist.
+		EntrypointAware: cfg.Entrypoint != "",
 	}
 }
 
@@ -195,7 +218,7 @@ func (s *Server) watchLoop(w *fsnotify.Watcher, stop <-chan struct{}, onChange f
 			}
 		case <-reload:
 			old := s.Config()
-			s.LoadConfig(s.cfgState.root, onError)
+			s.LoadConfig(s.configRoot(), onError)
 			if onChange != nil {
 				onChange(old, s.Config())
 			}
