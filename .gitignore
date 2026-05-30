@@ -17,5 +17,8 @@ editors/vscode/*.vsix
 editors/monaco/node_modules/
 editors/monaco/dist/
 
+# Highlight grammar test harness
+test/highlight/node_modules/
+
 # Local Claude Code scratch/session state
 .claude/
