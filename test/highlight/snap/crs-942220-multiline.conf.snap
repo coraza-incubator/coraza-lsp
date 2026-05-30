@@ -1,0 +1,189 @@
+>SecRule REQUEST_COOKIES|REQUEST_COOKIES_NAMES|ARGS_NAMES|ARGS|XML:/* "@rx (?i)^(?:429496729[56]|2(?:14748364[78]|.22507385850720(?:07|11)e-308)|-(?:214748364[89]|0000023456)|00000(?:12345|23456)|1e309)$" \
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^^^^^^^^^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#                       ^ source.seclang meta.rule.seclang punctuation.separator.variable.seclang
+#                        ^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#                                             ^ source.seclang meta.rule.seclang punctuation.separator.variable.seclang
+#                                              ^^^^^^^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#                                                        ^ source.seclang meta.rule.seclang punctuation.separator.variable.seclang
+#                                                         ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#                                                             ^ source.seclang meta.rule.seclang punctuation.separator.variable.seclang
+#                                                              ^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#                                                                 ^ source.seclang meta.rule.seclang punctuation.separator.key.seclang
+#                                                                  ^^ source.seclang meta.rule.seclang variable.parameter.selector.seclang
+#                                                                    ^ source.seclang meta.rule.seclang
+#                                                                     ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                                                                      ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                                                                       ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                                                                                                                                                                                                          ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                                                                                                                                                                                                           ^ source.seclang meta.rule.seclang
+#                                                                                                                                                                                                            ^ source.seclang meta.rule.seclang punctuation.separator.continuation.seclang
+>    "id:942220,\
+#^^^^^ source.seclang meta.action-list.seclang
+#     ^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#        ^^^^^^ source.seclang meta.action-list.seclang constant.numeric.seclang
+#              ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#               ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    phase:2,\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#          ^ source.seclang meta.action-list.seclang constant.numeric.seclang
+#           ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#            ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    block,\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^^ source.seclang meta.action-list.seclang keyword.control.disruptive.seclang
+#         ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#          ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    capture,\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^^^^ source.seclang meta.action-list.seclang keyword.control.flow.seclang
+#           ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#            ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    t:none,t:urlDecodeUni,\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#      ^^^^ source.seclang meta.action-list.seclang support.function.builtin.seclang
+#          ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#           ^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#             ^^^^^^^^^^^^ source.seclang meta.action-list.seclang support.function.builtin.seclang
+#                         ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                          ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    msg:'Looking for integer overflow attacks, these are taken from skipfish, except 2.2.2250738585072011e-308 is the \"magic number\" crash',\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#        ^ source.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang
+#                                                                                                                                            ^ source.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                                                                                                                                             ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                                                                                                              ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    logdata:'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}',\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#            ^ source.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#             ^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.seclang
+#                           ^^ source.seclang meta.action-list.seclang string.quoted.single.seclang meta.macro.seclang punctuation.definition.macro.begin.seclang
+#                             ^^ source.seclang meta.action-list.seclang string.quoted.single.seclang meta.macro.seclang variable.other.macro.collection.seclang
+#                               ^^ source.seclang meta.action-list.seclang string.quoted.single.seclang meta.macro.seclang variable.other.macro.key.seclang
+#                                 ^ source.seclang meta.action-list.seclang string.quoted.single.seclang meta.macro.seclang punctuation.definition.macro.end.seclang
+#                                  ^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.seclang
+#                                                ^^ source.seclang meta.action-list.seclang string.quoted.single.seclang meta.macro.seclang punctuation.definition.macro.begin.seclang
+#                                                  ^^^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.seclang meta.macro.seclang variable.other.macro.collection.seclang
+#                                                                  ^ source.seclang meta.action-list.seclang string.quoted.single.seclang meta.macro.seclang punctuation.definition.macro.end.seclang
+#                                                                   ^^ source.seclang meta.action-list.seclang string.quoted.single.seclang
+#                                                                     ^^ source.seclang meta.action-list.seclang string.quoted.single.seclang meta.macro.seclang punctuation.definition.macro.begin.seclang
+#                                                                       ^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.seclang meta.macro.seclang variable.other.macro.collection.seclang
+#                                                                                  ^ source.seclang meta.action-list.seclang string.quoted.single.seclang meta.macro.seclang punctuation.definition.macro.end.seclang
+#                                                                                   ^ source.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                                                                                    ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                                                     ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    tag:'application-multi',\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#        ^ source.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#         ^^^^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.tag.seclang
+#                          ^ source.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                           ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                            ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    tag:'language-multi',\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#        ^ source.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#         ^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.tag.seclang
+#                       ^ source.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                        ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                         ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    tag:'platform-multi',\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#        ^ source.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#         ^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.tag.seclang
+#                       ^ source.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                        ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                         ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    tag:'attack-sqli',\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#        ^ source.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#         ^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.tag.seclang
+#                    ^ source.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                     ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                      ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    tag:'paranoia-level/1',\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#        ^ source.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#         ^^^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.tag.seclang
+#                         ^ source.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                          ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                           ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    tag:'OWASP_CRS',\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#        ^ source.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#         ^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.tag.seclang
+#                  ^ source.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                   ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                    ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    tag:'OWASP_CRS/ATTACK-SQLI',\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#        ^ source.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#         ^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.tag.seclang
+#                              ^ source.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                               ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    tag:'capec/1000/152/248/66',\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#        ^ source.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#         ^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.tag.seclang
+#                              ^ source.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                               ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    ver:'OWASP_CRS/4.27.0-dev',\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#        ^ source.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#         ^^^^^^^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.seclang
+#                             ^ source.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                              ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                               ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    severity:'CRITICAL',\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^^^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#             ^ source.seclang meta.action-list.seclang punctuation.definition.string.seclang
+#              ^^^^^^^^ source.seclang meta.action-list.seclang constant.language.severity.seclang
+#                      ^ source.seclang meta.action-list.seclang punctuation.definition.string.seclang
+#                       ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                        ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    setvar:'tx.sql_injection_score=+%{tx.critical_anomaly_score}',\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#           ^ source.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#            ^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang
+#                                  ^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang keyword.operator.assignment.seclang
+#                                   ^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang
+#                                    ^^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang meta.macro.seclang punctuation.definition.macro.begin.seclang
+#                                      ^^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang meta.macro.seclang variable.other.macro.collection.seclang
+#                                        ^^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang meta.macro.seclang variable.other.macro.key.seclang
+#                                                               ^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang meta.macro.seclang punctuation.definition.macro.end.seclang
+#                                                                ^ source.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                                                                 ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                                  ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    setvar:'tx.inbound_anomaly_score_pl1=+%{tx.critical_anomaly_score}'"
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#           ^ source.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang
+#                                        ^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang keyword.operator.assignment.seclang
+#                                         ^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang
+#                                          ^^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang meta.macro.seclang punctuation.definition.macro.begin.seclang
+#                                            ^^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang meta.macro.seclang variable.other.macro.collection.seclang
+#                                              ^^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang meta.macro.seclang variable.other.macro.key.seclang
+#                                                                     ^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang meta.macro.seclang punctuation.definition.macro.end.seclang
+#                                                                      ^ source.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                                                                       ^ source.seclang meta.action-list.seclang
+>

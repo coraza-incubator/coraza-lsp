@@ -1,0 +1,1079 @@
+># SecLang highlighting edge-case corpus.
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang comment.line.number-sign.seclang
+># Synthetic but valid-shaped rules that stress the TextMate grammar:
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang comment.line.number-sign.seclang
+># operators, negation, variable selectors, macros, ctl/setvar, quoting,
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang comment.line.number-sign.seclang
+># continuations (indented and column-0), transformations, and directives.
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang comment.line.number-sign.seclang
+>
+># ── Operators: presence, arguments, negation, no-arg ────────────────────────
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang comment.line.number-sign.seclang
+>SecRule ARGS "@rx attack" "id:1,phase:2,deny"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^^^^^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                        ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                         ^ source.seclang meta.rule.seclang
+#                          ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                           ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                              ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                               ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                      ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                       ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                        ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.disruptive.seclang
+#                                            ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule ARGS "@detectSQLi" "id:2,phase:2,deny"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^^^^^^^^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                         ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                          ^ source.seclang meta.rule.seclang
+#                           ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                            ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                               ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                 ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                       ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                        ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                         ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.disruptive.seclang
+#                                             ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule ARGS "!@rx ^$" "id:3,phase:2,pass"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang keyword.operator.seclang
+#               ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                  ^^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                     ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                      ^ source.seclang meta.rule.seclang
+#                       ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                        ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                           ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                            ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                             ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                    ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                     ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                         ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule REQBODY_ERROR "!@eq 0" "id:4,phase:2,deny,severity:2"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^^^^^^^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#                     ^ source.seclang meta.rule.seclang
+#                      ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                       ^ source.seclang meta.rule.seclang meta.operator.seclang keyword.operator.seclang
+#                        ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                         ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                           ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                              ^ source.seclang meta.rule.seclang
+#                               ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                                ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                    ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                     ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                           ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                            ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                             ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.disruptive.seclang
+#                                                 ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                  ^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                           ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.language.severity.seclang
+#                                                            ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule ARGS "@pmFromFile lfi-os-files.data" "id:5,phase:1,pass"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^^^^^^^^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                         ^^^^^^^^^^^^^^^^^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                                           ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                                            ^ source.seclang meta.rule.seclang
+#                                             ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                                              ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                 ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                   ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                         ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                                          ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                           ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                                               ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule ARGS "@within %{tx.allowed_methods}" "id:6,phase:1,pass"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^^^^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                     ^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                                           ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                                            ^ source.seclang meta.rule.seclang
+#                                             ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                                              ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                 ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                   ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                         ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                                          ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                           ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                                               ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule ARGS "@rx a#b#c" "id:7,phase:2,pass"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^^^^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                       ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                        ^ source.seclang meta.rule.seclang
+#                         ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                          ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                             ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                              ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                               ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                     ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                      ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                       ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                           ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule ARGS "@rx attack\"vector" "id:8,phase:2,pass"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^^^^^^^^^^^^^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                                ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                                 ^ source.seclang meta.rule.seclang
+#                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                                   ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                      ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                       ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                        ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                              ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                               ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                                    ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule ARGS "@rx it's a (?i:test)" "id:9,phase:2,pass"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^^^^^^^^^^^^^^^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                                  ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                                   ^ source.seclang meta.rule.seclang
+#                                    ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                                     ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                        ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                         ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                          ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                                 ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                  ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                                      ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule ARGS "@rx \d{1,5}" "id:10,phase:2,pass"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^^^^^^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                         ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                          ^ source.seclang meta.rule.seclang
+#                           ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                            ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                               ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                 ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                  ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                        ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                         ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                          ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                              ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>
+># ── Variables: selectors, counts, negation, regex selectors, lists, XML ─────
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang comment.line.number-sign.seclang
+>SecRule ARGS:user "@rx x" "id:20,phase:2,pass"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang punctuation.separator.key.seclang
+#             ^^^^ source.seclang meta.rule.seclang variable.parameter.selector.seclang
+#                 ^ source.seclang meta.rule.seclang
+#                  ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                   ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                    ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                      ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                        ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                         ^ source.seclang meta.rule.seclang
+#                          ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                           ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                              ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                 ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                       ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                        ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                         ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                             ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule ARGS:'user name' "@rx x" "id:21,phase:2,pass"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang punctuation.separator.key.seclang
+#             ^^^^^^^^^^^ source.seclang meta.rule.seclang variable.parameter.selector.seclang
+#                        ^ source.seclang meta.rule.seclang
+#                         ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                          ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                           ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                             ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                               ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                                ^ source.seclang meta.rule.seclang
+#                                 ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                                  ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                     ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                       ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                        ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                              ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                               ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                                    ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule &ARGS "@eq 0" "id:22,phase:2,pass"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^ source.seclang meta.rule.seclang keyword.operator.variable.seclang
+#         ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#             ^ source.seclang meta.rule.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang
+#               ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                  ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                    ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                     ^ source.seclang meta.rule.seclang
+#                      ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                       ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                          ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                            ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                             ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                    ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                     ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                         ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule !ARGS:password "@rx x" "id:23,phase:2,pass"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^ source.seclang meta.rule.seclang keyword.operator.variable.seclang
+#         ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#             ^ source.seclang meta.rule.seclang punctuation.separator.key.seclang
+#              ^^^^^^^^ source.seclang meta.rule.seclang variable.parameter.selector.seclang
+#                      ^ source.seclang meta.rule.seclang
+#                       ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                        ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                         ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                           ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                              ^ source.seclang meta.rule.seclang
+#                               ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                                ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                   ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                     ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                      ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                            ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                             ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                              ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule REQUEST_HEADERS:/^X-Forwarded/ "@rx x" "id:24,phase:1,pass"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^^^^^^^^^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#                       ^ source.seclang meta.rule.seclang punctuation.separator.key.seclang
+#                        ^^^^^^^^^^^^^^ source.seclang meta.rule.seclang variable.parameter.selector.seclang
+#                                      ^ source.seclang meta.rule.seclang
+#                                       ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                                        ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                                         ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                                           ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                                             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                                              ^ source.seclang meta.rule.seclang
+#                                               ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                                                ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                   ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                                     ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                      ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                            ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                                             ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                              ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule ARGS|ARGS_NAMES|!ARGS:secret "@rx x" "id:25,phase:2,pass"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang punctuation.separator.variable.seclang
+#             ^^^^^^^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#                       ^ source.seclang meta.rule.seclang punctuation.separator.variable.seclang
+#                        ^ source.seclang meta.rule.seclang keyword.operator.variable.seclang
+#                         ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#                             ^ source.seclang meta.rule.seclang punctuation.separator.key.seclang
+#                              ^^^^^^ source.seclang meta.rule.seclang variable.parameter.selector.seclang
+#                                    ^ source.seclang meta.rule.seclang
+#                                     ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                                      ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                                       ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                                         ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                                           ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                                            ^ source.seclang meta.rule.seclang
+#                                             ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                                              ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                 ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                    ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                          ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                                           ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                            ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                                                ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule XML:/* "@rx x" "id:26,phase:2,pass"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#           ^ source.seclang meta.rule.seclang punctuation.separator.key.seclang
+#            ^^ source.seclang meta.rule.seclang variable.parameter.selector.seclang
+#              ^ source.seclang meta.rule.seclang
+#               ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                   ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                     ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                      ^ source.seclang meta.rule.seclang
+#                       ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                        ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                           ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                             ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                              ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                    ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                     ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                      ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                          ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule XML://@attr "@rx x" "id:27,phase:2,pass"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#           ^ source.seclang meta.rule.seclang punctuation.separator.key.seclang
+#            ^^ source.seclang meta.rule.seclang variable.parameter.selector.seclang
+#              ^ source.seclang meta.rule.seclang
+#               ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#                   ^ source.seclang meta.rule.seclang
+#                    ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                     ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                      ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                        ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                          ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                           ^ source.seclang meta.rule.seclang
+#                            ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                             ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                   ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                         ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                          ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                           ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                               ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule TX:anomaly_score "@gt 5" "id:28,phase:5,pass"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#          ^ source.seclang meta.rule.seclang punctuation.separator.key.seclang
+#           ^^^^^^^^^^^^^ source.seclang meta.rule.seclang variable.parameter.selector.seclang
+#                        ^ source.seclang meta.rule.seclang
+#                         ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                          ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                           ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                             ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                               ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                                ^ source.seclang meta.rule.seclang
+#                                 ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                                  ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                     ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                       ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                        ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                              ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                               ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                                    ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>
+># ── Transformations (chained) ───────────────────────────────────────────────
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang comment.line.number-sign.seclang
+>SecRule ARGS "@rx x" "id:30,phase:2,t:none,t:lowercase,t:urlDecodeUni,t:removeNulls,t:compressWhitespace,pass"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                   ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                    ^ source.seclang meta.rule.seclang
+#                     ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                      ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                         ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                           ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                            ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                    ^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                      ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang support.function.builtin.seclang
+#                                          ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                           ^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                             ^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang support.function.builtin.seclang
+#                                                      ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                       ^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                         ^^^^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang support.function.builtin.seclang
+#                                                                     ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                                      ^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                                        ^^^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang support.function.builtin.seclang
+#                                                                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                                                    ^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                                                      ^^^^^^^^^^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang support.function.builtin.seclang
+#                                                                                                        ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                                                                         ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                                                                                             ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>
+># ── Macros in msg / logdata / setvar; key forms .key and :key ───────────────
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang comment.line.number-sign.seclang
+>SecRule ARGS "@rx x" \
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                   ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                    ^ source.seclang meta.rule.seclang
+#                     ^ source.seclang meta.rule.seclang punctuation.separator.continuation.seclang
+>    "id:31,phase:2,pass,\
+#^^^^^ source.seclang meta.action-list.seclang
+#     ^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#        ^^ source.seclang meta.action-list.seclang constant.numeric.seclang
+#          ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#           ^^^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                 ^ source.seclang meta.action-list.seclang constant.numeric.seclang
+#                  ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                   ^^^^ source.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                       ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                        ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    msg:'Matched %{TX.0} in %{MATCHED_VAR_NAME}',\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#        ^ source.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#         ^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang
+#                 ^^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang meta.macro.seclang punctuation.definition.macro.begin.seclang
+#                   ^^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang meta.macro.seclang variable.other.macro.collection.seclang
+#                     ^^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang meta.macro.seclang variable.other.macro.key.seclang
+#                       ^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang meta.macro.seclang punctuation.definition.macro.end.seclang
+#                        ^^^^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang
+#                            ^^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang meta.macro.seclang punctuation.definition.macro.begin.seclang
+#                              ^^^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang meta.macro.seclang variable.other.macro.collection.seclang
+#                                              ^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang meta.macro.seclang punctuation.definition.macro.end.seclang
+#                                               ^ source.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                                                ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                 ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    logdata:'val=%{MATCHED_VAR} score=%{tx.anomaly_score}',\
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#            ^ source.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#             ^^^^ source.seclang meta.action-list.seclang string.quoted.single.seclang
+#                 ^^ source.seclang meta.action-list.seclang string.quoted.single.seclang meta.macro.seclang punctuation.definition.macro.begin.seclang
+#                   ^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.seclang meta.macro.seclang variable.other.macro.collection.seclang
+#                              ^ source.seclang meta.action-list.seclang string.quoted.single.seclang meta.macro.seclang punctuation.definition.macro.end.seclang
+#                               ^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.seclang
+#                                      ^^ source.seclang meta.action-list.seclang string.quoted.single.seclang meta.macro.seclang punctuation.definition.macro.begin.seclang
+#                                        ^^ source.seclang meta.action-list.seclang string.quoted.single.seclang meta.macro.seclang variable.other.macro.collection.seclang
+#                                          ^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.seclang meta.macro.seclang variable.other.macro.key.seclang
+#                                                        ^ source.seclang meta.action-list.seclang string.quoted.single.seclang meta.macro.seclang punctuation.definition.macro.end.seclang
+#                                                         ^ source.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                                                          ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                           ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>    setvar:'tx.score=+%{tx.critical_anomaly_score}'"
+#^^^^ source.seclang meta.action-list.seclang
+#    ^^^^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#           ^ source.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#            ^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang
+#                    ^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang keyword.operator.assignment.seclang
+#                     ^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang
+#                      ^^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang meta.macro.seclang punctuation.definition.macro.begin.seclang
+#                        ^^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang meta.macro.seclang variable.other.macro.collection.seclang
+#                          ^^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang meta.macro.seclang variable.other.macro.key.seclang
+#                                                 ^ source.seclang meta.action-list.seclang string.quoted.single.setvar.seclang meta.macro.seclang punctuation.definition.macro.end.seclang
+#                                                  ^ source.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                                                   ^ source.seclang meta.action-list.seclang
+>SecRule GEO:COUNTRY_CODE "@streq CN" "id:32,phase:1,deny,setvar:tx.block=1"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#           ^ source.seclang meta.rule.seclang punctuation.separator.key.seclang
+#            ^^^^^^^^^^^^ source.seclang meta.rule.seclang variable.parameter.selector.seclang
+#                        ^ source.seclang meta.rule.seclang
+#                         ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                          ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                           ^^^^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                                ^^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                                    ^ source.seclang meta.rule.seclang
+#                                     ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                                      ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                         ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                           ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                            ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                    ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.disruptive.seclang
+#                                                        ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                         ^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                                ^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang variable.other.seclang
+#                                                                        ^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.operator.assignment.seclang
+#                                                                         ^ source.seclang meta.rule.seclang meta.action-list.seclang string.unquoted.setvar-value.seclang
+#                                                                          ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>
+># ── setvar / setenv / expirevar / initcol variants (quoted + unquoted) ──────
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang comment.line.number-sign.seclang
+>SecAction "id:40,phase:1,pass,nolog,setvar:tx.paranoia_level=1"
+#^^^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#         ^ source.seclang meta.rule.seclang
+#          ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#           ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#              ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                 ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                       ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                        ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                         ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                             ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                              ^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                    ^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                           ^^^^^^^^^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang variable.other.seclang
+#                                                            ^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.operator.assignment.seclang
+#                                                             ^ source.seclang meta.rule.seclang meta.action-list.seclang string.unquoted.setvar-value.seclang
+#                                                              ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecAction "id:41,phase:1,pass,nolog,setvar:!tx.foo"
+#^^^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#         ^ source.seclang meta.rule.seclang
+#          ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#           ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#              ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                 ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                       ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                        ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                         ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                             ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                              ^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                    ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                          ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                                           ^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang string.unquoted.action-value.seclang
+#                                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecAction "id:42,phase:1,pass,nolog,expirevar:tx.foo=60"
+#^^^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#         ^ source.seclang meta.rule.seclang
+#          ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#           ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#              ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                 ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                       ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                        ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                         ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                             ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                              ^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                    ^^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                              ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang variable.other.seclang
+#                                                    ^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.operator.assignment.seclang
+#                                                     ^^ source.seclang meta.rule.seclang meta.action-list.seclang string.unquoted.setvar-value.seclang
+#                                                       ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecAction "id:43,phase:1,pass,nolog,initcol:ip=%{REMOTE_ADDR}"
+#^^^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#         ^ source.seclang meta.rule.seclang
+#          ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#           ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#              ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                 ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                       ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                        ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                         ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                             ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                              ^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                    ^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                           ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                                            ^^^ source.seclang meta.rule.seclang meta.action-list.seclang string.unquoted.action-value.seclang
+#                                               ^^ source.seclang meta.rule.seclang meta.action-list.seclang meta.macro.seclang punctuation.definition.macro.begin.seclang
+#                                                 ^^^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang meta.macro.seclang variable.other.macro.collection.seclang
+#                                                            ^ source.seclang meta.rule.seclang meta.action-list.seclang meta.macro.seclang punctuation.definition.macro.end.seclang
+#                                                             ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecAction "id:44,phase:1,pass,nolog,setenv:'TESTING=1'"
+#^^^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#         ^ source.seclang meta.rule.seclang
+#          ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#           ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#              ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                 ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                       ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                        ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                         ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                             ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                              ^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                    ^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                           ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#                                            ^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang string.quoted.single.setvar.seclang
+#                                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang string.quoted.single.setvar.seclang keyword.operator.assignment.seclang
+#                                                    ^ source.seclang meta.rule.seclang meta.action-list.seclang string.quoted.single.setvar.seclang
+#                                                     ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                                                      ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>
+># ── ctl variants ────────────────────────────────────────────────────────────
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang comment.line.number-sign.seclang
+>SecRule ARGS "@rx x" "id:50,phase:1,pass,ctl:ruleEngine=Off"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                   ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                    ^ source.seclang meta.rule.seclang
+#                     ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                      ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                         ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                           ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                            ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                    ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                        ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                         ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                             ^^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                       ^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.operator.assignment.seclang
+#                                                        ^^^ source.seclang meta.rule.seclang meta.action-list.seclang string.unquoted.seclang
+#                                                           ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule ARGS "@rx x" "id:51,phase:1,pass,ctl:auditLogParts=+E"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                   ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                    ^ source.seclang meta.rule.seclang
+#                     ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                      ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                         ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                           ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                            ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                    ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                        ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                         ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                             ^^^^^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                          ^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.operator.assignment.seclang
+#                                                           ^^ source.seclang meta.rule.seclang meta.action-list.seclang string.unquoted.seclang
+#                                                             ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule ARGS "@rx x" "id:52,phase:1,pass,ctl:ruleRemoveTargetById=981176;ARGS:foo"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                   ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                    ^ source.seclang meta.rule.seclang
+#                     ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                      ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                         ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                           ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                            ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                    ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                        ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                         ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                             ^^^^^^^^^^^^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                                 ^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.operator.assignment.seclang
+#                                                                  ^^^^^^^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang string.unquoted.seclang
+#                                                                                 ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>
+># ── id / severity / phase: quoted, unquoted, word, last-action ──────────────
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang comment.line.number-sign.seclang
+>SecRule ARGS "@rx x" "phase:request,pass,id:60"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                   ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                    ^ source.seclang meta.rule.seclang
+#                     ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                      ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                            ^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                    ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                        ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                         ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                            ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                              ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule ARGS "@rx x" "id:'61',phase:logging,pass,severity:'CRITICAL'"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                   ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                    ^ source.seclang meta.rule.seclang
+#                     ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                      ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                         ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.definition.string.seclang
+#                          ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                            ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.definition.string.seclang
+#                             ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                              ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                    ^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                           ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                            ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                                ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                 ^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                          ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.definition.string.seclang
+#                                                           ^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.language.severity.seclang
+#                                                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.definition.string.seclang
+#                                                                    ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule ARGS "@rx x" "id:62,phase:2,pass,severity:WARNING"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                   ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                    ^ source.seclang meta.rule.seclang
+#                     ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                      ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                         ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                           ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                            ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                    ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                        ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                         ^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                  ^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.language.severity.seclang
+#                                                         ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule ARGS "@rx x" "id:63,phase:2,pass,severity:2"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                   ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                    ^ source.seclang meta.rule.seclang
+#                     ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                      ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                         ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                           ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                            ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                    ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                        ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                         ^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.language.severity.seclang
+#                                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecRule ARGS "@rx x" "phase:2,pass,severity:2,id:64"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                   ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                    ^ source.seclang meta.rule.seclang
+#                     ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                      ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                            ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                             ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                              ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                   ^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                            ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.language.severity.seclang
+#                                             ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                              ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                 ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>
+># ── Chained rules (child has no id) ─────────────────────────────────────────
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang comment.line.number-sign.seclang
+>SecRule ARGS "@rx x" "id:70,phase:2,chain,deny"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                   ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                    ^ source.seclang meta.rule.seclang
+#                     ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                      ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                         ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                           ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                            ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                    ^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                         ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                          ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.disruptive.seclang
+#                                              ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>    SecRule REQUEST_METHOD "@streq POST" "t:none"
+#^^^^ source.seclang meta.directive.seclang
+#    ^^^^^^^ source.seclang meta.directive.seclang keyword.control.directive.seclang
+#           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.directive.seclang string.unquoted.seclang
+>
+># ── Column-0 continuation (ModSecurity style) ───────────────────────────────
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang comment.line.number-sign.seclang
+>SecRule MULTIPART_STRICT_ERROR "!@eq 0" \
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#                              ^ source.seclang meta.rule.seclang
+#                               ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                                ^ source.seclang meta.rule.seclang meta.operator.seclang keyword.operator.seclang
+#                                 ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                                  ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                                    ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                                      ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                                       ^ source.seclang meta.rule.seclang
+#                                        ^ source.seclang meta.rule.seclang punctuation.separator.continuation.seclang
+>"id:80,phase:2,t:none,log,deny,status:400, \
+#^ source.seclang meta.action-list.seclang
+# ^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#    ^^ source.seclang meta.action-list.seclang constant.numeric.seclang
+#      ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#       ^^^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#             ^ source.seclang meta.action-list.seclang constant.numeric.seclang
+#              ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#               ^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                 ^^^^ source.seclang meta.action-list.seclang support.function.builtin.seclang
+#                     ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                      ^^^ source.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                         ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                          ^^^^ source.seclang meta.action-list.seclang keyword.control.disruptive.seclang
+#                              ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                               ^^^^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                      ^^^ source.seclang meta.action-list.seclang constant.numeric.seclang
+#                                         ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                          ^ source.seclang meta.action-list.seclang
+#                                           ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>msg:'Multipart failed: PE %{REQBODY_PROCESSOR_ERROR}, BQ %{MULTIPART_BOUNDARY_QUOTED}',\
+#^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#    ^ source.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#     ^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang
+#                          ^^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang meta.macro.seclang punctuation.definition.macro.begin.seclang
+#                            ^^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang meta.macro.seclang variable.other.macro.collection.seclang
+#                                                   ^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang meta.macro.seclang punctuation.definition.macro.end.seclang
+#                                                    ^^^^^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang
+#                                                         ^^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang meta.macro.seclang punctuation.definition.macro.begin.seclang
+#                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang meta.macro.seclang variable.other.macro.collection.seclang
+#                                                                                    ^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang meta.macro.seclang punctuation.definition.macro.end.seclang
+#                                                                                     ^ source.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                                                                                      ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                                                                       ^ source.seclang meta.action-list.seclang punctuation.separator.continuation.seclang
+>severity:2"
+#^^^^^^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#         ^ source.seclang meta.action-list.seclang constant.language.severity.seclang
+#          ^ source.seclang meta.action-list.seclang
+>
+># ── Operator split onto its own continuation line ───────────────────────────
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang comment.line.number-sign.seclang
+>SecRule ARGS \
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang punctuation.separator.continuation.seclang
+>    "@rx (?i:union[\s]+select)" \
+#^^^^^ source.seclang meta.operator.seclang
+#     ^ source.seclang meta.operator.seclang entity.name.function.seclang
+#      ^^ source.seclang meta.operator.seclang entity.name.function.seclang
+#        ^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.operator.seclang string.quoted.double.seclang
+#                              ^ source.seclang meta.operator.seclang
+#                               ^^^ source.seclang
+>    "id:81,phase:2,deny,msg:'SQLi'"
+#^^^^^ source.seclang meta.action-list.seclang
+#     ^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#        ^^ source.seclang meta.action-list.seclang constant.numeric.seclang
+#          ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#           ^^^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                 ^ source.seclang meta.action-list.seclang constant.numeric.seclang
+#                  ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                   ^^^^ source.seclang meta.action-list.seclang keyword.control.disruptive.seclang
+#                       ^ source.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                        ^^^^ source.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                            ^ source.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#                             ^^^^ source.seclang meta.action-list.seclang string.quoted.single.msg.seclang
+#                                 ^ source.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                                  ^ source.seclang meta.action-list.seclang
+>
+># ── Directives that take rule-id ranges / tags ──────────────────────────────
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang comment.line.number-sign.seclang
+>SecRuleRemoveById 942100
+#^^^^^^^^^^^^^^^^^ source.seclang meta.directive.seclang keyword.control.directive.seclang
+#                 ^^^^^^^ source.seclang meta.directive.seclang string.unquoted.seclang
+>SecRuleRemoveById 942100-942999
+#^^^^^^^^^^^^^^^^^ source.seclang meta.directive.seclang keyword.control.directive.seclang
+#                 ^^^^^^^^^^^^^^ source.seclang meta.directive.seclang string.unquoted.seclang
+>SecRuleRemoveByTag "attack-sqli"
+#^^^^^^^^^^^^^^^^^^ source.seclang meta.directive.seclang keyword.control.directive.seclang
+#                  ^^^^^^^^^^^^^^ source.seclang meta.directive.seclang string.unquoted.seclang
+>SecRuleUpdateTargetById 942100 "!ARGS:foo"
+#^^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.directive.seclang keyword.control.directive.seclang
+#                       ^^^^^^^^^^^^^^^^^^^ source.seclang meta.directive.seclang string.unquoted.seclang
+>SecRuleUpdateActionById 942100 "t:none,deny"
+#^^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.directive.seclang keyword.control.directive.seclang
+#                       ^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.directive.seclang string.unquoted.seclang
+>
+># ── Markers (bare + quoted) ─────────────────────────────────────────────────
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang comment.line.number-sign.seclang
+>SecMarker END-REQUEST-942-APPLICATION-ATTACK-SQLI
+#^^^^^^^^^ source.seclang meta.directive.seclang keyword.control.directive.seclang
+#         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.directive.seclang string.unquoted.seclang
+>SecMarker "BEGIN SECTION"
+#^^^^^^^^^ source.seclang meta.directive.seclang keyword.control.directive.seclang
+#         ^^^^^^^^^^^^^^^^ source.seclang meta.directive.seclang string.unquoted.seclang
+>SecRule ARGS "@rx x" "id:90,phase:2,pass,skipAfter:END-REQUEST-942-APPLICATION-ATTACK-SQLI"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                   ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                    ^ source.seclang meta.rule.seclang
+#                     ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                      ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                         ^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                           ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                            ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                    ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                        ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                         ^^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.name.label.seclang
+#                                                                                          ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>
+># ── Includes / config directives ────────────────────────────────────────────
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang comment.line.number-sign.seclang
+>Include /etc/crs/rules/*.conf
+#^^^^^^^ source.seclang meta.directive.seclang keyword.control.directive.seclang
+#       ^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.directive.seclang string.unquoted.seclang
+>Include rules/local.conf
+#^^^^^^^ source.seclang meta.directive.seclang keyword.control.directive.seclang
+#       ^^^^^^^^^^^^^^^^^ source.seclang meta.directive.seclang string.unquoted.seclang
+>SecRuleEngine DetectionOnly
+#^^^^^^^^^^^^^ source.seclang meta.directive.seclang keyword.control.directive.seclang
+#             ^^^^^^^^^^^^^^ source.seclang meta.directive.seclang string.unquoted.seclang
+>SecDefaultAction "phase:2,log,auditlog,pass"
+#^^^^^^^^^^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#                ^ source.seclang meta.rule.seclang
+#                 ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                  ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                        ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                         ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                          ^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                             ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                              ^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                      ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                       ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                           ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>SecComponentSignature "OWASP_CRS/4.0.0"
+#^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.directive.seclang keyword.control.directive.seclang
+#                     ^^^^^^^^^^^^^^^^^^ source.seclang meta.directive.seclang string.unquoted.seclang
+>
+># ── msg containing escaped single quote and escaped double quote ────────────
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.seclang comment.line.number-sign.seclang
+>SecRule ARGS "@rx x" "id:100,phase:2,pass,msg:'it\'s the \"magic\" value'"
+#^^^^^^^ source.seclang meta.rule.seclang keyword.control.directive.seclang
+#       ^ source.seclang meta.rule.seclang
+#        ^^^^ source.seclang meta.rule.seclang entity.name.class.seclang
+#            ^ source.seclang meta.rule.seclang
+#             ^ source.seclang meta.rule.seclang meta.operator.seclang
+#              ^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#               ^^ source.seclang meta.rule.seclang meta.operator.seclang entity.name.function.seclang
+#                 ^^ source.seclang meta.rule.seclang meta.operator.seclang string.quoted.double.seclang
+#                   ^ source.seclang meta.rule.seclang meta.operator.seclang
+#                    ^ source.seclang meta.rule.seclang
+#                     ^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                      ^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                         ^^^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                            ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                             ^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                   ^ source.seclang meta.rule.seclang meta.action-list.seclang constant.numeric.seclang
+#                                    ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                     ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang keyword.control.flow.seclang
+#                                         ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.separator.comma.seclang
+#                                          ^^^^ source.seclang meta.rule.seclang meta.action-list.seclang entity.other.attribute-name.seclang
+#                                              ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.definition.string.begin.seclang
+#                                               ^^^ source.seclang meta.rule.seclang meta.action-list.seclang string.quoted.single.msg.seclang
+#                                                  ^ source.seclang meta.rule.seclang meta.action-list.seclang punctuation.definition.string.end.seclang
+#                                                   ^^^^^^^^^^^^^^^^^^^^^^ source.seclang meta.rule.seclang meta.action-list.seclang
+#                                                                         ^ source.seclang meta.rule.seclang meta.action-list.seclang
+>

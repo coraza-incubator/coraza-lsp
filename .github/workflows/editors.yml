@@ -11,6 +11,7 @@ on:
     branches: ["**"]
     paths:
       - "editors/**"
+      - "test/highlight/**"
       - "cmd/**"
       - "internal/**"
       - "go.mod"
@@ -19,6 +20,7 @@ on:
   pull_request:
     paths:
       - "editors/**"
+      - "test/highlight/**"
       - "cmd/**"
       - "internal/**"
       - "go.mod"
@@ -55,6 +57,25 @@ jobs:
         with:
           name: binary-${{ matrix.os }}
           path: bin/${{ matrix.binary }}
+
+  # -------------------------------------------------------------------------
+  # TextMate grammar: snapshot + highlighting-hole tests (no binary needed).
+  # Tokenizes with the same vscode-textmate + Oniguruma engine VS Code ships.
+  # -------------------------------------------------------------------------
+  grammar-tests:
+    name: TextMate grammar tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        run: npm install
+        working-directory: test/highlight
+      - name: Run grammar snapshot + hole tests
+        run: npm test
+        working-directory: test/highlight
 
   # -------------------------------------------------------------------------
   # VSCode extension: compile + tests (requires a built binary).

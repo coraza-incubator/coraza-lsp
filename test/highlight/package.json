@@ -1,0 +1,22 @@
+{
+  "name": "coraza-lsp-highlight-test",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "TextMate grammar tokenization harness for the SecLang grammar. Uses the same vscode-textmate + Oniguruma engine VS Code ships, so it measures real highlighting.",
+  "scripts": {
+    "tokenize": "node tokenize.mjs",
+    "audit": "node audit.mjs",
+    "test:snap": "vscode-tmgrammar-snap -g ../../editors/vscode/syntaxes/seclang.tmLanguage.json -s source.seclang \"snap/*.conf\"",
+    "test:snap:update": "vscode-tmgrammar-snap -u -g ../../editors/vscode/syntaxes/seclang.tmLanguage.json -s source.seclang \"snap/*.conf\"",
+    "test:holes": "node audit.mjs --corpus fixtures --max 0",
+    "test": "npm run test:snap && npm run test:holes"
+  },
+  "dependencies": {
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.2.0"
+  },
+  "devDependencies": {
+    "vscode-tmgrammar-test": "^0.1.3"
+  }
+}

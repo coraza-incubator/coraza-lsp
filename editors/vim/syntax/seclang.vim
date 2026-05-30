@@ -67,4 +67,11 @@ highlight default link seclangOperator     Function
 highlight default link seclangActionKey    Type
 highlight default link seclangTransformation Constant
 
+" ── Multi-line sync ─────────────────────────────────────────────────────────
+" Action-list and operator strings span several physical lines via '\'
+" continuation. Sync from far enough back that scrolling into the middle of a
+" long multi-line rule (e.g. CRS 942220 spans ~20 lines) still resolves the
+" enclosing quoted-string region correctly.
+syntax sync minlines=50
+
 let b:current_syntax = 'seclang'

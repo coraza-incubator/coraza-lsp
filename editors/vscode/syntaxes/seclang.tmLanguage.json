@@ -42,9 +42,9 @@
       }
     },
     "operator-continuation": {
-      "comment": "Operator expression on a continuation line, e.g. '    \"@rx pattern\" \\'. Must be listed before action-list-continuation so it wins over the generic indented-quote rule.",
+      "comment": "Operator expression on a continuation line, e.g. '    \"@rx pattern\" \\'. Must be listed before action-list-continuation so it wins over the generic indented-quote rule. Leading whitespace is optional (\\s*) because ModSecurity-style rules frequently put the continuation quote at column 0.",
       "name": "meta.operator.seclang",
-      "match": "^\\s+\"(!?)(@)([a-zA-Z][a-zA-Z0-9_]*)((?:\\s+(?:[^\"\\\\]|\\\\.)*)?)\"",
+      "match": "^\\s*\"(!?)(@)([a-zA-Z][a-zA-Z0-9_]*)((?:\\s+(?:[^\"\\\\]|\\\\.)*)?)\"",
       "captures": {
         "1": { "name": "keyword.operator.seclang" },
         "2": { "name": "entity.name.function.seclang" },
@@ -53,10 +53,10 @@
       }
     },
     "action-list-continuation": {
-      "comment": "Action list that starts on a continuation line (indented double-quoted string). The negative lookahead (?![!]?@) prevents this rule from consuming operator continuation lines like '\"@rx ...\"'.",
+      "comment": "Action list that starts on a continuation line (indented double-quoted string). The negative lookahead (?![!]?@) prevents this rule from consuming operator continuation lines like '\"@rx ...\"'. The end uses a negative lookbehind so an escaped quote (\\\") inside the action string does not prematurely close the list.",
       "name": "meta.action-list.seclang",
-      "begin": "^(\\s+)(\"(?![!]?@))",
-      "end": "\"",
+      "begin": "^(\\s*)(\"(?![!]?@))",
+      "end": "(?<!\\\\)\"",
       "patterns": [
         { "include": "#action-msg-quoted" },
         { "include": "#action-tag-quoted" },
@@ -72,17 +72,46 @@
         { "include": "#action-severity" },
         { "include": "#action-skipafter" },
         { "include": "#action-ctl" },
+        { "include": "#transformation" },
         { "include": "#macro-expansion" },
         { "include": "#action-separator" },
         { "include": "#action-key" },
         { "include": "#action-value" },
-        { "include": "#transformation" },
         { "include": "#continuation" }
       ]
     },
     "variable-list": {
-      "name": "entity.name.class.seclang",
-      "match": "[A-Za-z_][A-Za-z0-9_.]*(?::[^\\s\"\\\\]*)?"
+      "comment": "A SecRule target: one or more variables joined by '|', each optionally prefixed by '&' (count) or '!' (exclusion) and optionally followed by ':selector'. Sub-rules give the separator, modifier, collection name and selector distinct scopes.",
+      "patterns": [
+        { "include": "#variable-modifier" },
+        { "include": "#variable-separator" },
+        { "include": "#variable-keyed" },
+        { "include": "#variable-name" }
+      ]
+    },
+    "variable-modifier": {
+      "comment": "Count quantifier & and negation/exclusion ! prefixing a variable (e.g. &ARGS, !ARGS:z). Lookahead ensures a variable name follows so a stray & / ! is not miscoloured.",
+      "match": "[&!](?=[A-Za-z_])",
+      "name": "keyword.operator.variable.seclang"
+    },
+    "variable-separator": {
+      "comment": "Pipe separating variables in a target list (ARGS|REQUEST_HEADERS|...).",
+      "match": "\\|",
+      "name": "punctuation.separator.variable.seclang"
+    },
+    "variable-keyed": {
+      "comment": "COLLECTION:selector. Selector forms, in priority order: /regex/ (may contain | and escaped chars but NOT whitespace or quotes — a SecRule target never spans spaces, which also stops a non-regex selector like XML:/* from greedily matching a far-away '/' in the operator string), 'single-quoted', or a plain key up to the next separator/space/quote. Collection name and selector get distinct scopes.",
+      "match": "([A-Za-z_][A-Za-z0-9_.]*)(:)(/(?:[^/\\s\"\\\\]|\\\\.)*/|'[^']*'|[^\\s\"\\\\|,]*)",
+      "captures": {
+        "1": { "name": "entity.name.class.seclang" },
+        "2": { "name": "punctuation.separator.key.seclang" },
+        "3": { "name": "variable.parameter.selector.seclang" }
+      }
+    },
+    "variable-name": {
+      "comment": "Bare collection/variable name with no selector (ARGS, REQUEST_HEADERS, TX, &MATCHED_VARS).",
+      "match": "[A-Za-z_][A-Za-z0-9_.]*",
+      "name": "entity.name.class.seclang"
     },
     "operator-expr": {
       "name": "meta.operator.seclang",
@@ -97,7 +126,7 @@
     "action-string": {
       "name": "meta.action-list.seclang",
       "begin": "\"",
-      "end": "\"",
+      "end": "(?<!\\\\)\"",
       "patterns": [
         { "include": "#action-msg-quoted" },
         { "include": "#action-tag-quoted" },
@@ -113,11 +142,11 @@
         { "include": "#action-severity" },
         { "include": "#action-skipafter" },
         { "include": "#action-ctl" },
+        { "include": "#transformation" },
         { "include": "#macro-expansion" },
         { "include": "#action-separator" },
         { "include": "#action-key" },
-        { "include": "#action-value" },
-        { "include": "#transformation" }
+        { "include": "#action-value" }
       ]
     },
 
@@ -136,11 +165,14 @@
       }
     },
     "action-id": {
-      "comment": "id:N — rule identifier; N colored as a numeric constant.",
-      "match": "(id:)(['\"]?\\d+['\"]?)",
+      "comment": "id:N or id:'N'. Quotes matched as a balanced pair (see action-severity) so a trailing optional quote cannot swallow the action list's closing \" when id is the last, unquoted action.",
+      "match": "(id:)(?:(['\"])(\\d+)(['\"])|(\\d+))",
       "captures": {
         "1": { "name": "entity.other.attribute-name.seclang" },
-        "2": { "name": "constant.numeric.seclang" }
+        "2": { "name": "punctuation.definition.string.seclang" },
+        "3": { "name": "constant.numeric.seclang" },
+        "4": { "name": "punctuation.definition.string.seclang" },
+        "5": { "name": "constant.numeric.seclang" }
       }
     },
     "action-phase": {
@@ -168,13 +200,14 @@
       }
     },
     "action-severity": {
-      "comment": "severity:LEVEL or severity:'LEVEL' — severity colored as a language constant.",
-      "match": "(severity:)(['\"]?)(EMERGENCY|ALERT|CRITICAL|ERROR|WARNING|NOTICE|INFO|DEBUG|[0-7])(['\"]?)",
+      "comment": "severity:LEVEL or severity:'LEVEL'. The quotes are matched as a balanced pair via alternation (quoted form | unquoted form) rather than two independent optional quotes — an optional TRAILING quote would otherwise swallow the action list's own closing \" when severity is the last, unquoted action (e.g. ...,severity:2\").",
+      "match": "(severity:)(?:(['\"])(EMERGENCY|ALERT|CRITICAL|ERROR|WARNING|NOTICE|INFO|DEBUG|[0-7])(['\"])|(EMERGENCY|ALERT|CRITICAL|ERROR|WARNING|NOTICE|INFO|DEBUG|[0-7]))",
       "captures": {
         "1": { "name": "entity.other.attribute-name.seclang" },
         "2": { "name": "punctuation.definition.string.seclang" },
         "3": { "name": "constant.language.severity.seclang" },
-        "4": { "name": "punctuation.definition.string.seclang" }
+        "4": { "name": "punctuation.definition.string.seclang" },
+        "5": { "name": "constant.language.severity.seclang" }
       }
     },
     "action-skipafter": {
@@ -273,8 +306,9 @@
       "match": ","
     },
     "action-key": {
+      "comment": "Generic action key (word before ':' or ','). The lookbehind matches whitespace/comma/quote WITHOUT consuming it, so on indented continuation lines this rule starts at the word — tying with the specific action rules (action-msg-quoted, action-id, …) which are listed first and therefore win. Consuming leading whitespace here (the old \\s* form) made this rule start earlier than the specific rules, so it always won and, for msg:'… \\\"…\\\" …', exposed the escaped quotes and broke the action list.",
       "name": "entity.other.attribute-name.seclang",
-      "match": "(?:^|(?<=[,\"]))\\s*([a-zA-Z][a-zA-Z0-9_]*)(?=[:,\"]|$)"
+      "match": "(?:^|(?<=[\\s,\"]))([a-zA-Z][a-zA-Z0-9_]*)(?=[:,\"]|$)"
     },
     "action-value": {
       "name": "string.unquoted.action-value.seclang",
@@ -292,8 +326,12 @@
       }
     },
     "transformation": {
-      "name": "support.function.builtin.seclang",
-      "match": "(?<=t:)[a-zA-Z][a-zA-Z0-9_]*"
+      "comment": "t:NAME transformation. Matches 't:' + name as a unit, anchored to an action boundary (start / whitespace / comma / quote) so a substring like 'at:' cannot trigger it. Included BEFORE #action-value so the transformation name is not swallowed as a generic action value (the old (?<=t:) form lost the precedence race against action-value and was never applied).",
+      "match": "(?:^|(?<=[\\s,\"]))(t:)([a-zA-Z][a-zA-Z0-9_]*)",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.seclang" },
+        "2": { "name": "support.function.builtin.seclang" }
+      }
     },
     "continuation": {
       "name": "punctuation.separator.continuation.seclang",
