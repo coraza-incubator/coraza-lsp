@@ -88,35 +88,25 @@ func unquoteSingle(s string) string {
 
 // splitOnComma splits s on commas that are not inside single-quoted strings.
 // This handles action values like msg:'a,b,c'.
+// It scans bytes and returns subslices of the original string, preserving the
+// byte offsets that downstream position mapping relies on (no rune copy).
 func splitOnComma(s string) []string {
 	var parts []string
-	var cur strings.Builder
 	inSingle := false
-	i := 0
-	runes := []rune(s)
-	for i < len(runes) {
-		r := runes[i]
+	start := 0
+	for i := 0; i < len(s); i++ {
+		c := s[i]
 		switch {
-		case r == '\\' && inSingle && i+1 < len(runes) && runes[i+1] == '\'':
+		case c == '\\' && inSingle && i+1 < len(s) && s[i+1] == '\'':
 			// Escaped single quote inside single-quoted string.
-			cur.WriteRune(r)
-			cur.WriteRune(runes[i+1])
-			i += 2
-			continue
-		case r == '\'' && !inSingle:
-			inSingle = true
-			cur.WriteRune(r)
-		case r == '\'' && inSingle:
-			inSingle = false
-			cur.WriteRune(r)
-		case r == ',' && !inSingle:
-			parts = append(parts, cur.String())
-			cur.Reset()
-		default:
-			cur.WriteRune(r)
+			i++
+		case c == '\'':
+			inSingle = !inSingle
+		case c == ',' && !inSingle:
+			parts = append(parts, s[start:i])
+			start = i + 1
 		}
-		i++
 	}
-	parts = append(parts, cur.String())
+	parts = append(parts, s[start:])
 	return parts
 }

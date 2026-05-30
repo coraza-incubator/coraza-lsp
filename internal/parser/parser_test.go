@@ -1285,3 +1285,42 @@ func TestParse_VariableWildcardRanges(t *testing.T) {
 	args := rule.Variables[1]
 	assert.Equal(t, 25, args.Range.Start.Character, "ARGS start char")
 }
+
+// TestToken_PhysPos_RuneColumns is a regression test for FIX 3: PhysPos takes a
+// BYTE offset into Token.Value but must return a RUNE column. A multibyte value
+// earlier in the token must not shift later positions by (bytes - runes).
+func TestToken_PhysPos_RuneColumns(t *testing.T) {
+	t.Parallel()
+	// Value "café X": é is 2 bytes. Byte offset 5 ("café " then X) is rune index 5.
+	tok := Token{
+		Type:      TokenQuoted,
+		Value:     "café X",
+		Line:      0,
+		StartChar: 0, // opening quote at column 0, value begins at column 1
+	}
+	// Byte offset of "X" within Value: c(0)a(1)f(2)é(3,4) (5)X = byte 6.
+	line, char := tok.PhysPos(6)
+	assert.Equal(t, 0, line)
+	// Value starts at column StartChar+1 = 1; "X" is rune index 5 in the value,
+	// so its column is 1+5 = 6 (NOT byte-shifted to 7).
+	assert.Equal(t, 6, char)
+}
+
+// TestParse_ActionRangeNotByteShifted is the end-to-end FIX 3 regression: the
+// "id" action after a multibyte msg value must report its true rune column.
+func TestParse_ActionRangeNotByteShifted(t *testing.T) {
+	t.Parallel()
+	src := `SecRule ARGS "@rx x" "msg:'café',id:1,deny"`
+	f := Parse("test.conf", src)
+	require.Len(t, f.Nodes, 1)
+	rule, ok := f.Nodes[0].(*RuleNode)
+	require.True(t, ok)
+	idAction := rule.FindAction("id")
+	require.NotNil(t, idAction)
+
+	// Compute the true rune column of "id" in the source line.
+	idx := strings.Index(src, ",id:1,") + 1 // +1 to point at 'i'
+	wantCol := len([]rune(src[:idx]))
+	assert.Equal(t, 0, idAction.Range.Start.Line)
+	assert.Equal(t, wantCol, idAction.Range.Start.Character)
+}

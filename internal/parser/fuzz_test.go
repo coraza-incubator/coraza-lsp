@@ -77,6 +77,10 @@ SecRuleEngine On`,
 	`""`,
 	`\\`,
 	`\`,
+	// Continuation-heavy: a single quoted string spanning many backslash-continued
+	// physical lines. Exercises readQuoted's per-segment boundary accounting and
+	// guards against the O(chars*segments) blowup fixed by precomputing boundaries.
+	"SecRule ARGS \"@rx aaaa" + strings.Repeat(" \\\n bbbb", 200) + "\" \"id:1,phase:2,deny\"",
 }
 
 func FuzzParse(f *testing.F) {
