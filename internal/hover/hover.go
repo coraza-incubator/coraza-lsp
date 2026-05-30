@@ -96,6 +96,15 @@ func hoverInRule(rule *parser.RuleNode, source string, line, char int) *Result {
 		}
 	}
 
+	// Macro expansion hover wins over the enclosing operator/action: %{COLLECTION...}
+	// can appear inside an operator argument or an action value, and the macro's
+	// variable doc is more specific than the operator/action doc around it.
+	if source != "" {
+		if item := macroVarAtPos(source, line, char); item != nil {
+			return buildResult(item, nil)
+		}
+	}
+
 	// Hover over the operator.
 	if rule.Operator != nil && rule.Operator.Range.ContainsPosition(line, char) {
 		// Check if hovering over operator name specifically.
@@ -121,10 +130,18 @@ func hoverInRule(rule *parser.RuleNode, source string, line, char int) *Result {
 			a := &rule.Actions[i]
 			if a.Range.ContainsPosition(line, char) {
 				name := a.LowerName()
-				// For transformation actions, hover the transformation value.
+				// For a transformation action `t:NAME`, show the transformation doc
+				// only when the cursor is on the value; on the `t` / `:` keyword
+				// itself show the `t` action doc.
 				if name == "t" && a.HasColon {
-					item := knowledge.Transformation(a.Value)
-					if item != nil {
+					valueStart := a.Range.Start.Character + 2 // past "t:"
+					onValue := line == a.Range.Start.Line && char >= valueStart
+					if onValue {
+						if item := knowledge.Transformation(a.Value); item != nil {
+							r := a.Range
+							return buildResult(item, &r)
+						}
+					} else if item := knowledge.Action("t"); item != nil {
 						r := a.Range
 						return buildResult(item, &r)
 					}
@@ -154,14 +171,6 @@ func hoverInRule(rule *parser.RuleNode, source string, line, char int) *Result {
 					return buildResult(item, nil)
 				}
 			}
-		}
-	}
-
-	// Macro expansion hover: %{COLLECTION.key} or %{COLLECTION:key} anywhere in
-	// the rule — operator argument or action values.
-	if source != "" {
-		if item := macroVarAtPos(source, line, char); item != nil {
-			return buildResult(item, nil)
 		}
 	}
 
