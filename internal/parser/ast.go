@@ -183,9 +183,21 @@ type ActionExpr struct {
 	Range Range
 }
 
-// LowerName returns the lowercased action name.
+// LowerName returns the lowercased action name. Action names are ASCII, so we
+// only need to fold A-Z. Fast path: if the name has no uppercase ASCII letter,
+// it is already lowercase and is returned unchanged with no allocation.
 func (a ActionExpr) LowerName() string {
 	name := a.Name
+	hasUpper := false
+	for i := 0; i < len(name); i++ {
+		if c := name[i]; c >= 'A' && c <= 'Z' {
+			hasUpper = true
+			break
+		}
+	}
+	if !hasUpper {
+		return name
+	}
 	result := make([]byte, len(name))
 	for i := 0; i < len(name); i++ {
 		c := name[i]

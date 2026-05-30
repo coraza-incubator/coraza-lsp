@@ -207,19 +207,27 @@ func (s *logicalScanner) readQuoted() Token {
 
 	// For multi-line logical lines, track which physical segment s.pos is in.
 	// segmentBoundary(i) gives the byte offset in the logical string where segment i starts.
+	// To avoid O(chars*segments) work (a DoS hazard on continuation-heavy input),
+	// precompute all segment boundaries once and index the slice in the loop.
 	curSeg := 0
-	if len(s.lineMap) > 1 {
+	multiSeg := len(s.lineMap) > 1
+	var bounds []int
+	if multiSeg {
+		bounds = make([]int, len(s.lineMap)+1)
+		for k := 1; k <= len(s.lineMap); k++ {
+			bounds[k] = s.segmentBoundary(k)
+		}
 		// Find the starting segment for s.pos (first char of value, after opening ").
-		for curSeg+1 < len(s.lineMap) && s.pos >= s.segmentBoundary(curSeg+1) {
+		for curSeg+1 < len(s.lineMap) && s.pos >= bounds[curSeg+1] {
 			curSeg++
 		}
 	}
 
 	for !s.done() {
 		// Before processing the char at s.pos, check if we've entered a new segment.
-		if len(s.lineMap) > 1 {
+		if multiSeg {
 			for curSeg+1 < len(s.lineMap) {
-				nextBoundary := s.segmentBoundary(curSeg + 1)
+				nextBoundary := bounds[curSeg+1]
 				if s.pos < nextBoundary {
 					break
 				}
@@ -236,9 +244,17 @@ func (s *logicalScanner) readQuoted() Token {
 
 		ch := s.logical[s.pos]
 		if ch == '\\' && s.pos+1 < len(s.logical) {
-			s.pos++ // skip backslash
-			buf.WriteByte(s.logical[s.pos])
-			s.pos++
+			// Coraza's seclang unescaper only unescapes \" -> "; every other
+			// backslash is left untouched. Emit accordingly, advancing 2 logical
+			// bytes either way so the segment-boundary check above stays correct.
+			next := s.logical[s.pos+1]
+			if next == '"' {
+				buf.WriteByte('"')
+			} else {
+				buf.WriteByte('\\')
+				buf.WriteByte(next)
+			}
+			s.pos += 2
 		} else if ch == '"' {
 			s.pos++ // consume closing "
 			closed = true

@@ -223,3 +223,44 @@ func TestLexer_DirectiveWithTabSeparatedArgs(t *testing.T) {
 	assert.Equal(t, "SecRuleEngine", tokens[0].Value)
 	assert.Equal(t, "On", tokens[1].Value)
 }
+
+// TestLexer_PreservesBackslashEscapes is a regression test: readQuoted must not
+// strip backslashes from regex operator arguments. Coraza's seclang unescaper
+// only unescapes \" -> "; every other backslash is left literal. Previously the
+// lexer dropped the backslash for every escape, corrupting patterns like
+// [\s\x0b] into [sx0b].
+func TestLexer_PreservesBackslashEscapes(t *testing.T) {
+	t.Parallel()
+
+	t.Run("regex character classes survive", func(t *testing.T) {
+		t.Parallel()
+		src := `SecRule ARGS "@rx [\s\x0b]" "id:1"`
+		tokens := NewLexer(src).Tokenize()
+		require.Len(t, tokens, 4)
+		assert.Equal(t, TokenQuoted, tokens[2].Type)
+		assert.Equal(t, `@rx [\s\x0b]`, tokens[2].Value)
+	})
+
+	t.Run("escaped double quotes are unescaped", func(t *testing.T) {
+		t.Parallel()
+		src := `SecRule ARGS "@rx say \"hi\"" "id:1"`
+		tokens := NewLexer(src).Tokenize()
+		require.Len(t, tokens, 4)
+		assert.Equal(t, TokenQuoted, tokens[2].Type)
+		assert.Equal(t, `@rx say "hi"`, tokens[2].Value)
+	})
+}
+
+// TestParse_OperatorArgRoundTripsBackslashes asserts the parsed OperatorExpr
+// argument keeps its backslashes intact end-to-end.
+func TestParse_OperatorArgRoundTripsBackslashes(t *testing.T) {
+	t.Parallel()
+	src := `SecRule ARGS "@rx [\s\x0b]" "id:1"`
+	f := Parse("test.conf", src)
+	require.Len(t, f.Nodes, 1)
+	rule, ok := f.Nodes[0].(*RuleNode)
+	require.True(t, ok)
+	require.NotNil(t, rule.Operator)
+	assert.Equal(t, "rx", rule.Operator.Name)
+	assert.Equal(t, `[\s\x0b]`, rule.Operator.Argument)
+}

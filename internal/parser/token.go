@@ -12,6 +12,8 @@
 // All positions are 0-indexed (line and character) following the LSP convention.
 package parser
 
+import "unicode/utf8"
+
 // TokenType classifies a scanned token.
 type TokenType int
 
@@ -69,17 +71,34 @@ type Token struct {
 // PhysPos returns the physical (line, char) for a byte offset within Token.Value.
 // Used by action/variable parsers to compute correct diagnostic positions for
 // values that span multiple physical lines.
+//
+// valueByte is a BYTE offset into Token.Value, but the returned char is a RUNE
+// column (matching the lexer, which reports columns as utf8.RuneCountInString).
+// We therefore convert the byte offset into a rune count relative to the start
+// of the active physical segment before adding it to that segment's start column,
+// so that multibyte content earlier in the value (e.g. msg:'café') does not shift
+// subsequent positions by (bytes - runes).
 func (t Token) PhysPos(valueByte int) (physLine, physChar int) {
-	// Base: value starts right after the opening " on token's start line.
-	base := t.StartChar + 1
+	if valueByte < 0 {
+		valueByte = 0
+	}
+	if valueByte > len(t.Value) {
+		valueByte = len(t.Value)
+	}
+	// Default: still on the token's start line. The value begins right after the
+	// opening " (StartChar+1). The rune column is that base plus the rune count of
+	// the value bytes preceding valueByte.
 	line := t.Line
+	startCol := t.StartChar + 1
+	segByte := 0 // byte offset in Value where the active segment begins
 	for _, b := range t.PhysLineBreaks {
 		if b.ValueByte > valueByte {
 			break
 		}
 		line = b.PhysLine
-		// The physical char for valueByte is b.PhysChar + (valueByte - b.ValueByte).
-		base = b.PhysChar - b.ValueByte
+		startCol = b.PhysChar
+		segByte = b.ValueByte
 	}
-	return line, base + valueByte
+	runeOff := utf8.RuneCountInString(t.Value[segByte:valueByte])
+	return line, startCol + runeOff
 }
