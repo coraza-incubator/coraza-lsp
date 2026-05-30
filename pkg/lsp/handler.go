@@ -477,7 +477,7 @@ func (s *Server) codeActionHandler(ctx *glsp.Context, params *protocol.CodeActio
 	if doc == nil {
 		return nil, nil
 	}
-	actions := codeactions.CodeActionsForDiagnostics(params.Context.Diagnostics, doc.AST, doc.Content, params.Range)
+	actions := codeactions.CodeActionsForDiagnostics(params.Context.Diagnostics, doc.AST, doc.Content, params.Range, string(params.TextDocument.URI))
 	if len(actions) == 0 {
 		return nil, nil
 	}

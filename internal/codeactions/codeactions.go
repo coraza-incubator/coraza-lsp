@@ -18,12 +18,15 @@ import (
 )
 
 // CodeActionsForDiagnostics returns quick-fix code actions for diagnostics
-// that overlap with the given range.
+// that overlap with the given range. docURI is the URI of the document the
+// diagnostics belong to; every produced WorkspaceEdit is keyed on it so editors
+// can actually apply the fix.
 func CodeActionsForDiagnostics(
 	diags []protocol_3_16.Diagnostic,
 	f *parser.File,
 	source string,
 	reqRange protocol_3_16.Range,
+	docURI string,
 ) []protocol_3_16.CodeAction {
 	var result []protocol_3_16.CodeAction
 
@@ -32,14 +35,14 @@ func CodeActionsForDiagnostics(
 		if !rangesOverlap(diag.Range, reqRange) {
 			continue
 		}
-		actions := actionsForDiagnostic(diag, f, source)
+		actions := actionsForDiagnostic(diag, f, source, docURI)
 		result = append(result, actions...)
 	}
 	return result
 }
 
 // actionsForDiagnostic returns code actions for a single diagnostic.
-func actionsForDiagnostic(diag protocol_3_16.Diagnostic, f *parser.File, source string) []protocol_3_16.CodeAction {
+func actionsForDiagnostic(diag protocol_3_16.Diagnostic, f *parser.File, source, docURI string) []protocol_3_16.CodeAction {
 	if diag.Code == nil {
 		return nil
 	}
@@ -53,17 +56,17 @@ func actionsForDiagnostic(diag protocol_3_16.Diagnostic, f *parser.File, source 
 
 	switch code {
 	case analysis.CodeMissingID:
-		return missingIDAction(diag, f, source, node)
+		return missingIDAction(diag, f, source, node, docURI)
 	case analysis.CodeMissingPhase:
-		return missingPhaseAction(diag, source, node)
+		return missingPhaseAction(diag, source, node, docURI)
 	case analysis.CodeUnknownDirective:
-		return deleteLineAction(diag, source)
+		return deleteLineAction(diag, source, docURI)
 	}
 	return nil
 }
 
 // missingIDAction adds an id action to the rule.
-func missingIDAction(diag protocol_3_16.Diagnostic, f *parser.File, source string, node parser.Node) []protocol_3_16.CodeAction {
+func missingIDAction(diag protocol_3_16.Diagnostic, f *parser.File, source string, node parser.Node, docURI string) []protocol_3_16.CodeAction {
 	rule, ok := node.(*parser.RuleNode)
 	if !ok {
 		return nil
@@ -86,7 +89,7 @@ func missingIDAction(diag protocol_3_16.Diagnostic, f *parser.File, source strin
 			Diagnostics: []protocol_3_16.Diagnostic{diag},
 			Edit: &protocol_3_16.WorkspaceEdit{
 				Changes: map[string][]protocol_3_16.TextEdit{
-					"": {*edit},
+					docURI: {*edit},
 				},
 			},
 		},
@@ -94,7 +97,7 @@ func missingIDAction(diag protocol_3_16.Diagnostic, f *parser.File, source strin
 }
 
 // missingPhaseAction adds a phase:2 action to the rule.
-func missingPhaseAction(diag protocol_3_16.Diagnostic, source string, node parser.Node) []protocol_3_16.CodeAction {
+func missingPhaseAction(diag protocol_3_16.Diagnostic, source string, node parser.Node, docURI string) []protocol_3_16.CodeAction {
 	rule, ok := node.(*parser.RuleNode)
 	if !ok {
 		return nil
@@ -112,7 +115,7 @@ func missingPhaseAction(diag protocol_3_16.Diagnostic, source string, node parse
 			Diagnostics: []protocol_3_16.Diagnostic{diag},
 			Edit: &protocol_3_16.WorkspaceEdit{
 				Changes: map[string][]protocol_3_16.TextEdit{
-					"": {*edit},
+					docURI: {*edit},
 				},
 			},
 		},
@@ -120,17 +123,38 @@ func missingPhaseAction(diag protocol_3_16.Diagnostic, source string, node parse
 }
 
 // deleteLineAction offers to remove the offending directive line.
-func deleteLineAction(diag protocol_3_16.Diagnostic, source string) []protocol_3_16.CodeAction {
+func deleteLineAction(diag protocol_3_16.Diagnostic, source, docURI string) []protocol_3_16.CodeAction {
 	lines := strings.Split(source, "\n")
 	lineIdx := int(diag.Range.Start.Line)
 	if lineIdx >= len(lines) {
 		return nil
 	}
 
-	startLine := uint32(lineIdx)
-	endLine := startLine + 1
-	if int(endLine) >= len(lines) {
-		endLine = startLine
+	// Default: remove the line plus its trailing newline (i.e. from the start of
+	// this line to the start of the next).
+	editRange := protocol_3_16.Range{
+		Start: protocol_3_16.Position{Line: uint32(lineIdx), Character: 0},
+		End:   protocol_3_16.Position{Line: uint32(lineIdx + 1), Character: 0},
+	}
+
+	// When this is the last line there is no following newline to consume; a
+	// zero-width [start,start] range would delete nothing. Instead, extend the
+	// range backwards to swallow the *previous* line's trailing newline (so the
+	// line and the newline that introduced it are removed). If this is also the
+	// first line, there is no previous newline, so just cover the line content.
+	if lineIdx+1 >= len(lines) {
+		if lineIdx > 0 {
+			prevLen := len([]rune(lines[lineIdx-1]))
+			editRange = protocol_3_16.Range{
+				Start: protocol_3_16.Position{Line: uint32(lineIdx - 1), Character: uint32(prevLen)},
+				End:   protocol_3_16.Position{Line: uint32(lineIdx), Character: uint32(len([]rune(lines[lineIdx])))},
+			}
+		} else {
+			editRange = protocol_3_16.Range{
+				Start: protocol_3_16.Position{Line: uint32(lineIdx), Character: 0},
+				End:   protocol_3_16.Position{Line: uint32(lineIdx), Character: uint32(len([]rune(lines[lineIdx])))},
+			}
+		}
 	}
 
 	return []protocol_3_16.CodeAction{
@@ -140,12 +164,9 @@ func deleteLineAction(diag protocol_3_16.Diagnostic, source string) []protocol_3
 			Diagnostics: []protocol_3_16.Diagnostic{diag},
 			Edit: &protocol_3_16.WorkspaceEdit{
 				Changes: map[string][]protocol_3_16.TextEdit{
-					"": {
+					docURI: {
 						{
-							Range: protocol_3_16.Range{
-								Start: protocol_3_16.Position{Line: startLine, Character: 0},
-								End:   protocol_3_16.Position{Line: endLine, Character: 0},
-							},
+							Range:   editRange,
 							NewText: "",
 						},
 					},

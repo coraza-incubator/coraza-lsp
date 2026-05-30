@@ -5,8 +5,12 @@
 package formatting
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 	"unicode/utf8"
+
+	"github.com/coraza-incubator/coraza-lsp/internal/parser"
 )
 
 var formatSeeds = []string{
@@ -20,6 +24,12 @@ var formatSeeds = []string{
 	"SecRule ARGS \"@rx x\" \\\n\\\n  \"id:1,phase:2,deny\"",
 	"SecRuleEngine On\r\nSecRuleEngine Off\r\n",
 	"  SecRuleEngine On  \n\t\tSecRuleEngine Off\t\n",
+	// Regex split across a continuation boundary: the bytes inside the quote must
+	// rejoin with NO separator, or the operator argument changes meaning.
+	"SecRule ARGS \"@rx ab\\\ncd\" \"id:1,phase:2,deny\"",
+	// CRS-style indented continuation action list: leading indentation of the
+	// continuation lines must not leak into the quoted action string.
+	"SecAction \\\n    \"id:980099,\\\n    phase:5,\\\n    pass\"",
 }
 
 // FuzzFormatIdempotent asserts Format(Format(x)) == Format(x). A formatter
@@ -43,11 +53,14 @@ func FuzzFormatIdempotent(f *testing.F) {
 	})
 }
 
-// FuzzFormatPreservesBytes asserts the formatter never introduces new
-// non-whitespace content. The diff between source and formatted source must
-// consist entirely of whitespace changes, so the bag of non-whitespace bytes
-// must be identical. Catches transformations that mangle rule text.
-func FuzzFormatPreservesBytes(f *testing.F) {
+// FuzzFormatPreservesSemantics asserts the formatter never changes rule
+// semantics: parse(format(x)) must yield the same rules — same directives,
+// variables, operators (name + argument), and actions (name + value) — as
+// parse(x). This is the invariant that actually protects quoted-string content
+// (regex operator arguments, action values) from spurious whitespace insertion
+// when continuation lines are joined; the old bag-of-bytes-minus-backslashes
+// check could not see a space wrongly added inside a quoted span.
+func FuzzFormatPreservesSemantics(f *testing.F) {
 	for _, s := range formatSeeds {
 		f.Add(s)
 	}
@@ -57,28 +70,36 @@ func FuzzFormatPreservesBytes(f *testing.F) {
 			t.Skip()
 		}
 		formatted := formatSource(source)
-		if nonWS(source) != nonWS(formatted) {
-			t.Fatalf("formatter changed non-whitespace bytes\ninput:     %q\nformatted: %q", source, formatted)
+
+		before := ruleDigest(source)
+		after := ruleDigest(formatted)
+		if before != after {
+			t.Fatalf("formatter changed rule semantics\ninput:     %q\nformatted: %q\nbefore:\n%s\nafter:\n%s",
+				source, formatted, before, after)
 		}
 	})
 }
 
-// nonWS returns s with ASCII whitespace AND all backslashes removed.
-// Backslashes in SecLang have two roles: line-continuation markers (which the
-// formatter may legitimately remove) and regex escapes inside quoted strings
-// (preserved on both sides since the formatter never touches quoted content).
-// In either case, comparing bag-of-bytes minus whitespace-and-backslash is
-// a conservative invariant: it catches any loss of actual rule content
-// (directive names, variables, operator names, action keys/values, comments)
-// without false-flagging structural backslash rewrites.
-func nonWS(s string) string {
-	b := make([]byte, 0, len(s))
-	for i := 0; i < len(s); i++ {
-		switch s[i] {
-		case ' ', '\t', '\r', '\n', '\v', '\f', '\\':
-			continue
+// ruleDigest renders a stable, whitespace-independent summary of every rule in
+// source: directive, variable names, operator (name + exact argument bytes),
+// and each action (name + exact value bytes). Two sources with the same digest
+// are semantically equivalent rule sets.
+func ruleDigest(source string) string {
+	file := parser.Parse("file:///fuzz.conf", source)
+	var sb strings.Builder
+	for _, rule := range file.AllRules() {
+		sb.WriteString("RULE ")
+		sb.WriteString(rule.Directive)
+		sb.WriteByte('\n')
+		for _, v := range rule.Variables {
+			fmt.Fprintf(&sb, "  VAR neg=%t count=%t %s:%s\n", v.Negated, v.Count, v.Name, v.Key)
 		}
-		b = append(b, s[i])
+		if rule.Operator != nil {
+			fmt.Fprintf(&sb, "  OP neg=%t @%s|%s\n", rule.Operator.Negated, rule.Operator.Name, rule.Operator.Argument)
+		}
+		for _, a := range rule.Actions {
+			fmt.Fprintf(&sb, "  ACT %s colon=%t |%s\n", a.LowerName(), a.HasColon, a.Value)
+		}
 	}
-	return string(b)
+	return sb.String()
 }
