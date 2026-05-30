@@ -34,33 +34,28 @@ func (s *Server) augmentCrossFile(uri string, doc *parser.File, base []protocol.
 		}
 	}
 
-	all := s.store.AllASTs()
-	// Index of "id → (uri, range)" from every *other* file.
-	type hit struct {
-		uri string
-		rng parser.Range
-	}
-	byID := make(map[string]hit)
-	for otherURI, f := range all {
-		if otherURI == uri || f == nil {
-			continue
-		}
-		for _, n := range f.Nodes {
-			rule, ok := n.(*parser.RuleNode)
-			if !ok {
-				continue
-			}
-			id := rule.FindAction("id")
-			if id == nil {
-				continue
-			}
-			if _, set := byID[id.Value]; !set {
-				byID[id.Value] = hit{uri: otherURI, rng: id.Range}
-			}
-		}
-	}
-	if len(byID) == 0 {
+	// Workspace-wide id index, cached and incrementally maintained by the
+	// DocumentStore rather than rebuilt from every file on each call.
+	xf := s.store.CrossFileIDs()
+	if len(xf) == 0 {
 		return base
+	}
+
+	// otherDefiner returns the URI/range of a file *other than* uri that also
+	// defines id, or ok=false when no other file does.
+	otherDefiner := func(id string) (string, parser.Range, bool) {
+		e, ok := xf[id]
+		if !ok || e.count == 0 {
+			return "", parser.Range{}, false
+		}
+		if e.uri1 != uri {
+			return e.uri1, e.rng1, true
+		}
+		// uri itself is the first definer; a second distinct file makes it a dup.
+		if e.count >= 2 {
+			return e.uri2, e.rng2, true
+		}
+		return "", parser.Range{}, false
 	}
 
 	severity := protocol.DiagnosticSeverityError
@@ -87,7 +82,7 @@ func (s *Server) augmentCrossFile(uri string, doc *parser.File, base []protocol.
 		if id == nil {
 			continue
 		}
-		other, ok := byID[id.Value]
+		otherURI, _, ok := otherDefiner(id.Value)
 		if !ok {
 			continue
 		}
@@ -100,7 +95,7 @@ func (s *Server) augmentCrossFile(uri string, doc *parser.File, base []protocol.
 			Code:     &code,
 			Message: fmt.Sprintf(
 				"duplicate rule id %s (also defined in %s)",
-				id.Value, other.uri),
+				id.Value, otherURI),
 		})
 	}
 	return out

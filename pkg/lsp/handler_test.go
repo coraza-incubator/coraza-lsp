@@ -6,6 +6,7 @@ package lsp
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -53,16 +54,14 @@ func TestDidChange_UpdatesContent(t *testing.T) {
 	openDoc(t, s, "file:///test.conf", "SecRuleEngine On")
 
 	ctx := newTestCtx()
-	raw, _ := json.Marshal(protocol.TextDocumentContentChangeEventWhole{Text: "SecRuleEngine Off"})
-	var change any
-	json.Unmarshal(raw, &change)
-	err := s.didChange(ctx, &protocol.DidChangeTextDocumentParams{
-		TextDocument: protocol.VersionedTextDocumentIdentifier{
-			TextDocumentIdentifier: protocol.TextDocumentIdentifier{URI: "file:///test.conf"},
-			Version:                2,
-		},
-		ContentChanges: []interface{}{change},
-	})
+	// Build params via the same JSON path glsp uses on the wire, so
+	// ContentChanges holds the concrete typed value (a whole-document event)
+	// that didChange/extractFullText expect — not a generic map.
+	var params protocol.DidChangeTextDocumentParams
+	require.NoError(t, json.Unmarshal([]byte(
+		`{"textDocument":{"uri":"file:///test.conf","version":2},`+
+			`"contentChanges":[{"text":"SecRuleEngine Off"}]}`), &params))
+	err := s.didChange(ctx, &params)
 	require.NoError(t, err)
 	doc := s.store.Get("file:///test.conf")
 	require.NotNil(t, doc)
@@ -312,4 +311,45 @@ func TestSplitLines(t *testing.T) {
 		got := splitLines(tc.input)
 		assert.Equal(t, tc.expected, got, "input: %q", tc.input)
 	}
+}
+
+func TestExtractFullText(t *testing.T) {
+	t.Parallel()
+	rng := &protocol.Range{}
+	cases := []struct {
+		name   string
+		raw    any
+		want   string
+		wantOK bool
+	}{
+		{"whole value", protocol.TextDocumentContentChangeEventWhole{Text: "hello"}, "hello", true},
+		{"whole pointer", &protocol.TextDocumentContentChangeEventWhole{Text: "hi"}, "hi", true},
+		{"full event no range", protocol.TextDocumentContentChangeEvent{Text: "full"}, "full", true},
+		{"full event ptr no range", &protocol.TextDocumentContentChangeEvent{Text: "fp"}, "fp", true},
+		{"incremental event rejected", protocol.TextDocumentContentChangeEvent{Range: rng, Text: "frag"}, "", false},
+		{"incremental ptr rejected", &protocol.TextDocumentContentChangeEvent{Range: rng, Text: "frag"}, "", false},
+		{"mistyped value rejected", 42, "", false},
+		{"nil rejected", nil, "", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, ok := extractFullText(tc.raw)
+			assert.Equal(t, tc.wantOK, ok)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestCheckWSOrigin(t *testing.T) {
+	t.Parallel()
+	mk := func(origin, host string) *http.Request {
+		r := &http.Request{Header: http.Header{}, Host: host}
+		if origin != "" {
+			r.Header.Set("Origin", origin)
+		}
+		return r
+	}
+	assert.True(t, checkWSOrigin(mk("", "127.0.0.1:7999")), "no Origin (native client) allowed")
+	assert.True(t, checkWSOrigin(mk("http://127.0.0.1:7999", "127.0.0.1:7999")), "same-origin allowed")
+	assert.False(t, checkWSOrigin(mk("http://evil.example", "127.0.0.1:7999")), "cross-origin rejected")
 }

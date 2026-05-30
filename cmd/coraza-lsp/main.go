@@ -9,6 +9,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net"
 	"os"
 
 	"github.com/tliron/commonlog"
@@ -60,9 +61,9 @@ func main() {
 	var err error
 	switch {
 	case *tcpAddr != "":
-		err = srv.RunTCP(*tcpAddr)
+		err = srv.RunTCP(loopbackAddr(*tcpAddr))
 	case *wsAddr != "":
-		err = srv.RunWebSocket(*wsAddr)
+		err = srv.RunWebSocket(loopbackAddr(*wsAddr))
 	default: // --stdio is the default (also when --stdio flag is explicitly set)
 		_ = useStdio
 		err = srv.RunStdio()
@@ -72,4 +73,21 @@ func main() {
 		fmt.Fprintf(os.Stderr, "coraza-lsp: fatal: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+// loopbackAddr defaults a bare port / wildcard bind to loopback. The TCP and
+// WebSocket transports are dev-only and have no/limited per-message size
+// guards (see pkg/lsp), so binding them to all interfaces would expose the LSP
+// — including its on-disk file-read behaviour — to the local network. If the
+// user provides an explicit host we honour it; only a missing or wildcard host
+// (e.g. ":7998" or "0.0.0.0:7998") is rewritten to 127.0.0.1.
+func loopbackAddr(addr string) string {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return addr // leave malformed input for the listener to reject
+	}
+	if host == "" || host == "0.0.0.0" || host == "::" {
+		host = "127.0.0.1"
+	}
+	return net.JoinHostPort(host, port)
 }
