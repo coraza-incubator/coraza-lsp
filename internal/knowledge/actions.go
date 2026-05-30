@@ -64,28 +64,11 @@ var allActions = []Item{
 		Description: "**redirect** stops rule processing and issues an HTTP redirect (default 302)\n" +
 			"to the specified URL. Use `status:301` for permanent redirects.",
 	},
-	{
-		Name:        "proxy",
-		ActionType:  "disruptive",
-		Summary:     "Forward the request to another backend server (ModSecurity 2.x only)",
-		Syntax:      "proxy:URL",
-		Example:     `SecRule REQUEST_URI "@rx /api" "id:7,phase:1,proxy:http://api-server:8080"`,
-		Description: "**proxy** forwards the request transparently to a different backend server.\n" +
-			"The original client is unaware of the forwarding.\n\n" +
-			"**Note:** This action is defined in ModSecurity 2.x but is not implemented in Coraza v3. " +
-			"It will be parsed but may have no effect.",
-	},
-	{
-		Name:        "pause",
-		ActionType:  "disruptive",
-		Summary:     "Pause transaction processing for a number of milliseconds (ModSecurity 2.x only)",
-		Syntax:      "pause:MILLISECONDS",
-		Example:     `SecRule TX:ratelimit "@gt 10" "id:8,phase:1,pause:500"`,
-		Description: "**pause** introduces a delay in processing the current transaction.\n" +
-			"Useful for rate limiting and tarpit functionality.\n\n" +
-			"**Note:** This action is defined in ModSecurity 2.x but is not implemented in Coraza v3. " +
-			"It will be parsed but may have no effect.",
-	},
+	// Note: ModSecurity 2.x `proxy` and `pause` actions are intentionally NOT
+	// listed here. Coraza v3.5.0 does not register them and rejects them at
+	// parse time with `invalid action "proxy"` / `invalid action "pause"`
+	// (internal/actions/actions.go Get + appendRuleAction return the error).
+	// Listing them would suppress a correct unknown-action diagnostic.
 	// Metadata actions
 	{
 		Name:        "id",
@@ -165,14 +148,12 @@ var allActions = []Item{
 		Example:     "maturity:9",
 		Description: "**maturity** rates how well-tested the rule is: 1 (experimental) to 9 (production-ready).",
 	},
-	{
-		Name:        "accuracy",
-		ActionType:  "metadata",
-		Summary:     "Rule accuracy/false-positive rate (1–9)",
-		Syntax:      "accuracy:NUMBER",
-		Example:     "accuracy:8",
-		Description: "**accuracy** rates how likely the rule is to produce false positives: 1 (high FP rate) to 9 (very accurate).",
-	},
+	// Note: ModSecurity's `accuracy` metadata action is intentionally NOT listed
+	// here. Coraza v3.5.0 does not register it (it appears only inside a comment
+	// in internal/actions/maturity.go) and rejects it at parse time with
+	// `invalid action "accuracy"`. Modern OWASP CRS v4 no longer emits `accuracy`,
+	// so dropping it does not introduce false positives on CRS.
+	// `maturity`, `rev`, and `ver` ARE registered by Coraza and are kept above.
 	// Non-disruptive actions
 	{
 		Name:        "log",
@@ -307,7 +288,8 @@ var allActions = []Item{
 		Description: "**skipAfter** jumps execution to the first rule after the named `SecMarker` when\n" +
 			"this rule matches. The marker must appear later in the same configuration.",
 	},
-	// Data actions
+	// Data actions (status is the only Coraza ActionTypeData action;
+	// `t` and `ctl` below are ActionTypeNondisruptive in Coraza v3.5.0)
 	{
 		Name:        "status",
 		ActionType:  "data",
@@ -319,7 +301,7 @@ var allActions = []Item{
 	},
 	{
 		Name:        "t",
-		ActionType:  "data",
+		ActionType:  "non-disruptive",
 		Summary:     "Apply a transformation function before matching",
 		Syntax:      "t:TRANSFORMATION",
 		Example:     "t:lowercase,t:urlDecode",
@@ -329,7 +311,7 @@ var allActions = []Item{
 	},
 	{
 		Name:        "ctl",
-		ActionType:  "data",
+		ActionType:  "non-disruptive",
 		Summary:     "Change a WAF configuration option for this transaction",
 		Syntax:      "ctl:OPTION=VALUE",
 		Example:     "ctl:requestBodyProcessor=JSON",

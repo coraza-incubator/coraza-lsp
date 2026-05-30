@@ -106,13 +106,10 @@ var allTransformations = []Item{
 		Example:     `SecRule TX:data "@rx 3c73637" "id:13,phase:2,deny,t:hexEncode"`,
 		Description: "**hexEncode** converts each byte to its two-character lowercase hexadecimal representation.",
 	},
-	{
-		Name:        "sqlHexDecode",
-		Summary:     "Decode SQL hex notation (0x414243 format)",
-		Syntax:      "t:sqlHexDecode",
-		Example:     `SecRule ARGS "@rx select" "id:14,phase:2,deny,t:sqlHexDecode,t:lowercase"`,
-		Description: "**sqlHexDecode** decodes SQL hex-encoded strings in `0xHH...` format used in SQL injection attacks.",
-	},
+	// Note: `sqlHexDecode` is intentionally absent. Coraza v3.5.0 does NOT
+	// register it (it exists only as testdata in internal/transformations/
+	// testdata/sqlHexDecode.json, with no implementation), so Coraza rejects
+	// `t:sqlHexDecode` at parse time with `invalid transformation name`.
 	{
 		Name:        "escapeSeqDecode",
 		Summary:     "Decode ANSI C escape sequences",

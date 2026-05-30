@@ -279,13 +279,10 @@ var allVariables = []Item{
 		Example:     `SecRule REMOTE_PORT "@lt 1024" "id:62,phase:1,pass,log"`,
 		Description: "**REMOTE_PORT** contains the TCP source port number of the client connection.",
 	},
-	{
-		Name:        "REMOTE_USER",
-		Summary:     "Authenticated username",
-		Syntax:      "REMOTE_USER",
-		Example:     `SecRule REMOTE_USER "@streq admin" "id:63,phase:1,pass,log"`,
-		Description: "**REMOTE_USER** contains the username from HTTP authentication, if any.",
-	},
+	// Note: `REMOTE_USER` is intentionally absent. Coraza v3.5.0's variable
+	// parser (internal/variables/variablesmap.gen.go) does not recognise it and
+	// rejects `SecRule REMOTE_USER ...` with `unknown variable`. The
+	// authenticated identity is exposed via the USERID variable instead.
 	{
 		Name:        "SERVER_ADDR",
 		Summary:     "Server IP address",
@@ -438,13 +435,10 @@ var allVariables = []Item{
 		Example:     `SecAction "id:111,phase:1,pass,initcol:IP=%{REMOTE_ADDR}"`,
 		Description: "**IP** is a persistent collection keyed by IP address. Data survives across requests from the same client IP. Requires `initcol:IP=...` to initialize.",
 	},
-	{
-		Name:        "SESSION",
-		Summary:     "Persistent per-session collection",
-		Syntax:      "SESSION[:key]",
-		Example:     `SecAction "id:112,phase:1,pass,setsid:%{REQUEST_COOKIES:session}"`,
-		Description: "**SESSION** is a persistent collection keyed by session token. Data survives across requests in the same session. Initialize with `setsid`.",
-	},
+	// Note: `SESSION` is intentionally absent. Coraza v3.5.0's variable parser
+	// does not recognise a bare `SESSION` variable and rejects it with `unknown
+	// variable`. The persistent session collection is keyed through the
+	// SESSIONID variable instead.
 	{
 		Name:        "GEO",
 		Summary:     "Geolocation data populated by @geoLookup operator",

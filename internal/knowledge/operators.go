@@ -43,14 +43,9 @@ var allOperators = []Item{
 		Description: "**@contains** returns true when the target value contains the specified substring.\n" +
 			"Case-sensitive; use `t:lowercase` for case-insensitive matching.",
 	},
-	{
-		Name:    "containsWord",
-		Summary: "Check if the target contains a word (with word boundary matching)",
-		Syntax:  "@containsWord WORD",
-		Example: `SecRule ARGS "@containsWord select" "id:5,phase:2,deny,t:lowercase"`,
-		Description: "**@containsWord** matches when the target contains the pattern as a complete word\n" +
-			"(surrounded by word boundaries, not adjacent to alphanumeric characters).",
-	},
+	// Note: `@containsWord` is intentionally absent. Coraza v3.5.0 does NOT
+	// register it (internal/operators has no containsWord); Coraza rejects it
+	// at parse time with `operator containsWord not found`.
 	{
 		Name:    "beginsWith",
 		Summary: "Check if the target starts with a string",
@@ -97,13 +92,9 @@ var allOperators = []Item{
 		Description: "**@eq** compares the target as a number and returns true when equal.\n" +
 			"Both target and argument are converted to integers before comparison.",
 	},
-	{
-		Name:    "ne",
-		Summary: "Numeric not-equal comparison",
-		Syntax:  "@ne NUMBER",
-		Example: `SecRule REQBODY_ERROR "@ne 0" "id:12,phase:2,deny"`,
-		Description: "**@ne** returns true when the target numeric value is not equal to the argument.",
-	},
+	// Note: `@ne` is intentionally absent. Coraza v3.5.0 does NOT register a
+	// `ne` operator; it rejects `@ne` at parse time with `operator ne not
+	// found`. Use `!@eq` for a numeric not-equal test.
 	{
 		Name:    "gt",
 		Summary: "Numeric greater-than comparison",
@@ -191,14 +182,9 @@ var allOperators = []Item{
 		Description: "**@validateUtf8Encoding** returns true when the target contains invalid or overlong\n" +
 			"UTF-8 byte sequences.",
 	},
-	{
-		Name:    "verifyCC",
-		Summary: "Detect credit card numbers using Luhn algorithm",
-		Syntax:  "@verifyCC REGEX",
-		Example: `SecRule RESPONSE_BODY "@verifyCC \b(?:4[0-9]{12}(?:[0-9]{3})?)\b" "id:24,phase:4,deny"`,
-		Description: "**@verifyCC** matches the regex against the target and validates any match using the\n" +
-			"Luhn checksum algorithm. Returns true only when a valid credit card number is found.",
-	},
+	// Note: `@verifyCC` is intentionally absent. Coraza v3.5.0 does NOT register
+	// it; it rejects `@verifyCC` at parse time with `operator verifyCC not
+	// found`. (ModSecurity ships verifyCC/verifyCPF/verifySSN; Coraza does not.)
 	{
 		Name:    "noMatch",
 		Summary: "Always returns false (never matches)",
@@ -240,14 +226,9 @@ var allOperators = []Item{
 		Description: "**@inspectFile** executes an external script/program, passing the file path as an\n" +
 			"argument. Returns true when the program returns a non-zero exit code.",
 	},
-	{
-		Name:    "fuzzyHash",
-		Summary: "Match using ssdeep context-triggered piecewise hashing",
-		Syntax:  "@fuzzyHash /path/to/hashes.txt THRESHOLD",
-		Example: `SecRule REQUEST_BODY "@fuzzyHash /etc/coraza/known-malware.txt 75" "id:30,phase:2,deny"`,
-		Description: "**@fuzzyHash** computes an ssdeep fuzzy hash of the target and compares it against\n" +
-			"hashes in a file. The threshold (0–100) controls similarity required.",
-	},
+	// Note: `@fuzzyHash` is intentionally absent. Coraza v3.5.0 does NOT register
+	// it; it rejects `@fuzzyHash` at parse time with `operator fuzzyHash not
+	// found`. (ModSecurity's ssdeep-based operator is not implemented in Coraza.)
 	{
 		Name:    "ipMatchFromDataset",
 		Summary: "Match client IP against a dataset of IP addresses and CIDR ranges",

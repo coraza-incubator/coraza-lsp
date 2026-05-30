@@ -307,10 +307,16 @@ var allDirectives = []Item{
 	},
 	{
 		Name:    "SecRuleUpdateTargetByMsg",
-		Summary: "Add variables to rules matching a msg regex",
+		Summary: "Add variables to rules matching a msg regex (no-op in Coraza)",
 		Syntax:  `SecRuleUpdateTargetByMsg REGEX "VARIABLES"`,
 		Example: `SecRuleUpdateTargetByMsg "SQL Injection" "!ARGS:id"`,
-		Description: "**SecRuleUpdateTargetByMsg** appends variables to all rules whose `msg` matches the given regex.",
+		Description: "**SecRuleUpdateTargetByMsg** is intended to append variables to all rules whose `msg`\n" +
+			"matches the given regex.\n\n" +
+			"**Note:** Coraza v3.5.0 maps this directive to `directiveUnsupported` " +
+			"(internal/seclang/directivesmap.gen.go) — it is accepted at parse time but does nothing. " +
+			"Unlike `SecRuleUpdateTargetById` and `SecRuleUpdateTargetByTag`, which are fully functional, " +
+			"target exclusions written with this directive will silently have no effect.",
+		Deprecated: true,
 	},
 	{
 		Name:    "SecRuleUpdateTargetByTag",
@@ -575,5 +581,79 @@ var allDirectives = []Item{
 		Example: `SecAuditLogFileMode 0640`,
 		Description: "**SecAuditLogFileMode** sets the Unix permission mode for individual audit log\n" +
 			"files created under `SecAuditLogStorageDir`. Default is 0600.",
+	},
+	// Accepted-but-ignored directives.
+	//
+	// Coraza v3.5.0 registers the following directive names in
+	// internal/seclang/directivesmap.gen.go but maps each to
+	// `directiveUnsupported`, which `return nil`s without doing anything. They
+	// are listed here (rather than omitted) so the LSP does NOT emit a spurious
+	// "unknown directive" diagnostic for configs ported from ModSecurity — while
+	// the descriptions and Deprecated flag make clear they have no effect in
+	// Coraza. (Note: ModSecurity's SecRxPreFilter is NOT in Coraza v3.5.0's map
+	// and is intentionally not listed.)
+	{
+		Name:    "SecArgumentSeparator",
+		Summary: "Set the argument separator for application/x-www-form-urlencoded data (no-op in Coraza)",
+		Syntax:  `SecArgumentSeparator CHAR`,
+		Example: `SecArgumentSeparator &`,
+		Description: "**SecArgumentSeparator** defines the character used to separate query-string and\n" +
+			"form arguments (ModSecurity default `&`).\n\n" +
+			"**Note:** Coraza v3.5.0 accepts this directive for compatibility but ignores it " +
+			"(`directiveUnsupported`); the separator is not configurable.",
+		Deprecated: true,
+	},
+	{
+		Name:    "SecCookieFormat",
+		Summary: "Select the cookie parsing format, 0 (Netscape) or 1 (RFC 2965) (no-op in Coraza)",
+		Syntax:  `SecCookieFormat 0|1`,
+		Example: `SecCookieFormat 0`,
+		Description: "**SecCookieFormat** selects how request cookies are parsed in ModSecurity.\n\n" +
+			"**Note:** Coraza v3.5.0 accepts this directive for compatibility but ignores it " +
+			"(`directiveUnsupported`).",
+		Deprecated: true,
+	},
+	{
+		Name:    "SecUnicodeMap",
+		Summary: "Configure the Unicode mapping file and code page (no-op in Coraza)",
+		Syntax:  `SecUnicodeMap FILE [CODEPAGE]`,
+		Example: `SecUnicodeMap unicode.mapping 20127`,
+		Description: "**SecUnicodeMap** specifies the Unicode mapping file used by the `urlDecodeUni`\n" +
+			"and `utf8toUnicode` transformations in ModSecurity.\n\n" +
+			"**Note:** Coraza v3.5.0 accepts this directive for compatibility but ignores it " +
+			"(`directiveUnsupported`).",
+		Deprecated: true,
+	},
+	{
+		Name:    "SecTmpDir",
+		Summary: "Set the directory for temporary files (no-op in Coraza)",
+		Syntax:  `SecTmpDir /path/to/dir`,
+		Example: `SecTmpDir /tmp`,
+		Description: "**SecTmpDir** sets the directory ModSecurity uses for temporary files when data\n" +
+			"must be swapped to disk.\n\n" +
+			"**Note:** Coraza v3.5.0 accepts this directive for compatibility but ignores it " +
+			"(`directiveUnsupported`). Use `SecUploadDir` for uploaded-file storage.",
+		Deprecated: true,
+	},
+	{
+		Name:    "SecRuleScript",
+		Summary: "Define a rule whose logic is implemented by an external script (no-op in Coraza)",
+		Syntax:  `SecRuleScript /path/to/script.lua "ACTIONS"`,
+		Example: `SecRuleScript "/etc/coraza/check.lua" "id:9000,phase:2,deny"`,
+		Description: "**SecRuleScript** runs an external (e.g. Lua) script as a rule in ModSecurity.\n\n" +
+			"**Note:** Coraza v3.5.0 accepts this directive for compatibility but ignores it " +
+			"(`directiveUnsupported`); scripted rules are not executed.",
+		Deprecated: true,
+	},
+	{
+		Name:    "SecRulePerfTime",
+		Summary: "Set a per-rule performance-time logging threshold in microseconds (no-op in Coraza)",
+		Syntax:  `SecRulePerfTime MICROSECONDS`,
+		Example: `SecRulePerfTime 1000`,
+		Description: "**SecRulePerfTime** configures the threshold above which ModSecurity records\n" +
+			"per-rule performance timing.\n\n" +
+			"**Note:** Coraza v3.5.0 accepts this directive for compatibility but ignores it " +
+			"(`directiveUnsupported`).",
+		Deprecated: true,
 	},
 }
