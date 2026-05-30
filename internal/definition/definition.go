@@ -84,7 +84,14 @@ func resolveInRule(rule *parser.RuleNode, f *parser.File, line, char int) []prot
 // baseURI is the URI of the document containing the Include directive.
 func resolveIncludePath(filesys vfs.FileSystem, path, baseURI string) string {
 	if strings.HasPrefix(path, "file://") {
-		return path
+		// Route the file:// target through the provided filesystem rather than
+		// returning it verbatim — otherwise an Include of e.g. file:///etc/passwd
+		// would bypass the embedder's VFS sandbox entirely.
+		p := strings.TrimPrefix(path, "file://")
+		if fileExists(filesys, p) {
+			return "file://" + p
+		}
+		return ""
 	}
 	if filepath.IsAbs(path) {
 		if fileExists(filesys, path) {

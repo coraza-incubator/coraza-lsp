@@ -47,14 +47,32 @@ func WorkspaceSymbols(query string, documents map[string]*parser.File) []protoco
 			if !ok {
 				continue
 			}
+			// Skip rules with no id: chained-rule continuations and anonymous
+			// rules would otherwise appear as a bare "SecRule" with no useful
+			// navigation target.
+			if rule.FindAction("id") == nil {
+				continue
+			}
 			label := ruleLabel(rule)
-			if query == "" || containsIgnoreCase(label, query) {
+			if query == "" || containsIgnoreCase(label, query) || ruleMatchesTag(rule, query) {
 				sym := ruleToSymbolInfo(rule, uri, label)
 				result = append(result, sym)
 			}
 		}
 	}
 	return result
+}
+
+// ruleMatchesTag reports whether any of the rule's tag action values contains
+// query (case-insensitive). query is assumed non-empty.
+func ruleMatchesTag(rule *parser.RuleNode, query string) bool {
+	for i := range rule.Actions {
+		a := &rule.Actions[i]
+		if a.LowerName() == "tag" && containsIgnoreCase(a.Value, query) {
+			return true
+		}
+	}
+	return false
 }
 
 func ruleSymbol(rule *parser.RuleNode) *protocol_3_16.DocumentSymbol {

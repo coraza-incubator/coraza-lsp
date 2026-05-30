@@ -164,10 +164,20 @@ func TestResolveIncludePath_NonExistent(t *testing.T) {
 	assert.Equal(t, "", result)
 }
 
-func TestResolveIncludePath_AlreadyURI(t *testing.T) {
+func TestResolveIncludePath_FileURIRoutedThroughFS(t *testing.T) {
 	t.Parallel()
-	result := resolveIncludePath(testFS, "file:///etc/rules.conf", "file:///etc/coraza.conf")
-	assert.Equal(t, "file:///etc/rules.conf", result)
+	// A file:// Include is routed through the provided filesystem rather than
+	// returned verbatim: a nonexistent / out-of-sandbox target resolves to "".
+	got := resolveIncludePath(testFS, "file:///etc/coraza-nonexistent-xyz.conf", "file:///etc/coraza.conf")
+	assert.Equal(t, "", got, "file:// to a nonexistent path must not be navigable (sandbox)")
+
+	// A file:// target that does exist on the filesystem resolves normally.
+	tmp, err := os.CreateTemp("", "coraza-def-fileuri-*.conf")
+	require.NoError(t, err)
+	defer os.Remove(tmp.Name())
+	tmp.Close()
+	got = resolveIncludePath(testFS, "file://"+tmp.Name(), "file:///etc/coraza.conf")
+	assert.Equal(t, "file://"+tmp.Name(), got)
 }
 
 func TestResolveIncludePath_RelativeExists(t *testing.T) {

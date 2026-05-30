@@ -58,7 +58,11 @@ const (
 // line is the full text of the current line; cursorChar is the 0-indexed
 // character offset of the cursor within that line.
 func DetectContext(line string, cursorChar int) (ctx CompletionContext, prefix string) {
-	// Clamp cursor to line length.
+	// Clamp cursor into range. A negative offset (which some clients can send
+	// for an out-of-range position) would otherwise panic on line[:cursorChar].
+	if cursorChar < 0 {
+		cursorChar = 0
+	}
 	if cursorChar > len(line) {
 		cursorChar = len(line)
 	}
@@ -148,7 +152,14 @@ func contextInSecRule(argTokens []string, fullText, prefix string) (CompletionCo
 	if insideQuote {
 		switch completedQuotes {
 		case 0:
-			// Cursor is inside the first quoted arg → operator context.
+			// Cursor is inside the first quoted arg. If the operator name is
+			// already typed and followed by whitespace (e.g. `"@rx |`), the
+			// cursor is in the operator ARGUMENT, not still selecting the
+			// operator name.
+			if openQuoteContent(textFromVars) != "" && inOperatorArg(openQuoteContent(textFromVars)) {
+				return ContextOperatorArg, ""
+			}
+			// Otherwise the cursor is still selecting the @operator name.
 			return ContextOperator, strings.TrimLeft(prefix, "! @")
 		case 1:
 			// Cursor is inside the second quoted arg → action list.
@@ -163,6 +174,42 @@ func contextInSecRule(argTokens []string, fullText, prefix string) (CompletionCo
 		return ContextVariableList, lastSegment(prefix, '|')
 	}
 	return ContextUnknown, prefix
+}
+
+// openQuoteContent returns the text following the first '"' in s (the content of
+// the currently-open quoted argument). Returns "" if there is no '"'.
+func openQuoteContent(s string) string {
+	i := strings.IndexByte(s, '"')
+	if i < 0 {
+		return ""
+	}
+	return s[i+1:]
+}
+
+// inOperatorArg reports whether the open-quote content is past the operator name
+// (i.e. an optional '!', '@name', then whitespace) — meaning the cursor is in the
+// operator argument rather than still typing the operator name.
+func inOperatorArg(content string) bool {
+	c := strings.TrimLeft(content, " \t")
+	c = strings.TrimPrefix(c, "!")
+	if !strings.HasPrefix(c, "@") {
+		return false
+	}
+	c = c[1:]
+	n := 0
+	for n < len(c) {
+		ch := c[n]
+		isName := ch == '_' || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9')
+		if !isName {
+			break
+		}
+		n++
+	}
+	if n == 0 {
+		return false // no operator name yet
+	}
+	// Operator name is followed by whitespace → we are in the argument.
+	return n < len(c) && (c[n] == ' ' || c[n] == '\t')
 }
 
 // DetectContextInActionList detects completion context from the text of a

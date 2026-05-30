@@ -102,13 +102,15 @@ func (c *Config) Merge(defaults Config) {
 		c.Entrypoint = defaults.Entrypoint
 	}
 	if c.IncludePaths == nil {
-		c.IncludePaths = defaults.IncludePaths
+		// Copy (not alias) the default slices so later mutation of this config's
+		// slices cannot corrupt the shared defaults' backing arrays.
+		c.IncludePaths = append([]string(nil), defaults.IncludePaths...)
 	}
 	if c.FilePatterns == nil {
-		c.FilePatterns = defaults.FilePatterns
+		c.FilePatterns = append([]string(nil), defaults.FilePatterns...)
 	}
 	if c.Ignore == nil {
-		c.Ignore = defaults.Ignore
+		c.Ignore = append([]string(nil), defaults.Ignore...)
 	}
 	if c.Diagnostics == nil {
 		c.Diagnostics = map[string]Severity{}
