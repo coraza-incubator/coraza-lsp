@@ -18,9 +18,15 @@ type Options struct {
 	// "suppress this diagnostic entirely" and is honoured by emit().
 	SeverityOverrides map[string]config.Severity
 
-	// EntrypointAware is true when the analyser should treat the file as part
-	// of a complete rule set (config.Entrypoint is set and resolvable).
-	// Enables cross-file severities that would otherwise be softened.
+	// EntrypointAware is set by callers (pkg/lsp) when config.Entrypoint is
+	// non-empty, signalling that the file is part of a complete rule set.
+	//
+	// NOTE: this field is not yet consumed by the analyser — the planned
+	// cross-file severity promotion (escalating skipafter-not-found / unknown-
+	// variable hints to warnings when an entrypoint resolves them) is not
+	// implemented, and no resolvability check is performed. It is retained only
+	// because pkg/lsp populates it; reading it is a future enhancement. Do not
+	// rely on it to change diagnostic severities today.
 	EntrypointAware bool
 }
 
@@ -63,7 +69,10 @@ func (o Options) apply(diags []protocol_3_16.Diagnostic) []protocol_3_16.Diagnos
 	if len(o.SeverityOverrides) == 0 {
 		return diags
 	}
-	out := diags[:0]
+	// Allocate a fresh slice rather than aliasing the caller's backing array via
+	// diags[:0]: when an override drops or rewrites entries we would otherwise
+	// corrupt the caller's view of the input slice.
+	out := make([]protocol_3_16.Diagnostic, 0, len(diags))
 	for _, d := range diags {
 		code, ok := codeOf(d)
 		if !ok {

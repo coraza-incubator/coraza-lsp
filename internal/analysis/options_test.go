@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	protocol_3_16 "github.com/tliron/glsp/protocol_3_16"
 
 	"github.com/coraza-incubator/coraza-lsp/internal/config"
@@ -62,6 +63,42 @@ func TestAnalyzeWith_SeverityOff(t *testing.T) {
 			t.Fatalf("expected missing-id to be suppressed, got %v", d)
 		}
 	}
+}
+
+// TestApply_DoesNotAliasInput is a regression test for the bug where apply()
+// reused the caller's backing array via diags[:0]. When an override drops or
+// rewrites an entry, the in-place rewrite corrupted the caller's view of the
+// input slice. apply() must return a fresh slice and leave the input intact.
+func TestApply_DoesNotAliasInput(t *testing.T) {
+	t.Parallel()
+
+	mk := func(code string) protocol_3_16.Diagnostic {
+		sev := protocol_3_16.DiagnosticSeverityWarning
+		return protocol_3_16.Diagnostic{
+			Severity: &sev,
+			Code:     &protocol_3_16.IntegerOrString{Value: code},
+		}
+	}
+
+	// Input: [missing-id, missing-phase]. Override drops missing-id (off), so the
+	// output is [missing-phase]. The input slice must NOT be mutated.
+	input := []protocol_3_16.Diagnostic{mk(CodeMissingID), mk(CodeMissingPhase)}
+
+	opts := Options{SeverityOverrides: map[string]config.Severity{
+		CodeMissingID: config.SeverityOff,
+	}}
+	out := opts.apply(input)
+
+	// The first input element must still be missing-id (not overwritten).
+	c0, _ := codeOf(input[0])
+	assert.Equal(t, CodeMissingID, c0, "apply() must not corrupt the caller's input slice")
+	c1, _ := codeOf(input[1])
+	assert.Equal(t, CodeMissingPhase, c1)
+
+	// And the output must be the single surviving diagnostic.
+	require.Len(t, out, 1)
+	co, _ := codeOf(out[0])
+	assert.Equal(t, CodeMissingPhase, co)
 }
 
 // TestAnalyzeWith_NilOptionsMatchesAnalyze ensures AnalyzeWith with a zero

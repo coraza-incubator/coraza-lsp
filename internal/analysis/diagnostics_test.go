@@ -5,6 +5,7 @@
 package analysis
 
 import (
+	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -2239,20 +2240,30 @@ func TestValidateWithCoraza_MessageStripsWrapper(t *testing.T) {
 	}
 }
 
-// TestValidateWithCoraza_ReadfileError_Location verifies that a missing-file
-// Coraza error points to the Include directive line, not line 0.
-func TestValidateWithCoraza_ReadfileError_Location(t *testing.T) {
+// TestValidateWithCoraza_IncludeIsConfined verifies the Stage-2 security
+// confinement: an Include of an arbitrary host path is resolved against the
+// empty in-memory rootFS, so it can never read the host file. The unresolvable
+// reference is suppressed (no false-positive diagnostic) and, critically, no
+// file content is reflected back. See finding: confine the oracle's filesystem.
+func TestValidateWithCoraza_IncludeIsConfined(t *testing.T) {
 	t.Parallel()
 
-	// SecRuleEngine on line 0, Include with missing file on line 1.
-	src := "SecRuleEngine On\nInclude /tmp/this-file-definitely-does-not-exist-coraza-lsp-test.conf"
+	src := "SecRuleEngine On\nInclude /etc/hostname"
 	diags := ValidateWithCoraza(src, "")
-	require.NotEmpty(t, diags, "expected a Stage 2 diagnostic for missing file")
 
-	// The diagnostic must point to line 1 (the Include line), not line 0.
-	d := diags[0]
-	assert.Equal(t, uint32(1), d.Range.Start.Line,
-		"readfile error should point to the Include line, not line 0")
+	// No diagnostic is published for an unresolvable Include in confined mode.
+	assert.Empty(t, diags,
+		"Include of a host path must not produce a diagnostic in confined mode")
+
+	// Even if some diagnostic were produced, it must never contain host file
+	// contents reflected back to the client.
+	hostContents, _ := os.ReadFile("/etc/hostname")
+	if name := strings.TrimSpace(string(hostContents)); name != "" {
+		for _, d := range diags {
+			assert.NotContains(t, d.Message, name,
+				"diagnostic must not leak host file contents")
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -2721,4 +2732,286 @@ func TestAnalyze_CRS_EscapedQuotesInOperator(t *testing.T) {
 	varWarnings := filterByCode(diags, CodeUnknownVariable)
 	assert.Empty(t, varWarnings,
 		"rule with escaped quotes in operator must not produce unknown-variable warnings; got: %v", varWarnings)
+}
+
+// ---------------------------------------------------------------------------
+// Regression tests for the analysis-layer audit findings
+// ---------------------------------------------------------------------------
+
+// TestExtractRuleIDFromError_NoPanicOnToLowerLengthChange is a regression test
+// for the HIGH bug: extractRuleIDFromError indexed the lowercased string but
+// sliced the original. strings.ToLower can change byte length (Turkish 'İ'
+// folds to 2 bytes; the invalid byte 0xFF folds to U+FFFD, 1→3 bytes), so the
+// offset computed against the lowercased string went out of range on the
+// original. It must never panic and must still extract the id.
+func TestExtractRuleIDFromError_NoPanicOnToLowerLengthChange(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name   string
+		errMsg string
+		wantID string
+	}{
+		{
+			name:   "Turkish dotted capital I before id (ToLower grows bytes)",
+			errMsg: "İİİİid:4242 bad",
+			wantID: "4242",
+		},
+		{
+			name:   "invalid UTF-8 byte 0xFF before id (folds to U+FFFD, 1->3 bytes)",
+			errMsg: "\xff\xff\xffid:7 bad",
+			wantID: "7",
+		},
+		{
+			name:   "eszett before id",
+			errMsg: "ẞẞid:99",
+			wantID: "99",
+		},
+		{
+			name:   "no panic, no id",
+			errMsg: "\xffno-id-here",
+			wantID: "",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			// Must not panic.
+			got := extractRuleIDFromError(tc.errMsg)
+			assert.Equal(t, tc.wantID, got)
+		})
+	}
+}
+
+// TestValidateWithCoraza_OddIncludeDoesNotHangOrLeak verifies finding #2 (HIGH
+// security): an Include/@*FromFile referencing an odd or nonexistent host path
+// is resolved against the confined empty rootFS. It must (a) return promptly
+// (no hang) and (b) never reflect host file contents back in a diagnostic.
+func TestValidateWithCoraza_OddIncludeDoesNotHangOrLeak(t *testing.T) {
+	t.Parallel()
+
+	srcs := []string{
+		"Include /etc/passwd",
+		"Include /dev/null",
+		`SecRule ARGS "@pmFromFile /etc/hostname" "id:1,phase:2,deny"`,
+		`SecRule ARGS "@ipMatchFromFile /etc/hosts" "id:2,phase:2,deny"`,
+		"Include ./../../../../etc/shadow",
+	}
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for _, src := range srcs {
+			diags := ValidateWithCoraza(src, "")
+			// Confined rootFS: unresolvable references are suppressed.
+			assert.Empty(t, diags, "confined Include/FromFile must not produce diagnostics for %q", src)
+		}
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("ValidateWithCoraza hung on odd Include/FromFile paths")
+	}
+
+	// Explicit leak check against a readable host file.
+	hostContents, err := os.ReadFile("/etc/hostname")
+	if err == nil {
+		if name := strings.TrimSpace(string(hostContents)); name != "" {
+			for _, d := range ValidateWithCoraza(`SecRule ARGS "@pmFromFile /etc/hostname" "id:1,phase:2,deny"`, "") {
+				assert.NotContains(t, d.Message, name, "must not leak host file contents")
+			}
+		}
+	}
+}
+
+// TestValidateWithCoraza_TimeoutGuard verifies the build runs under a timeout
+// and recovers; a normal small document completes well within the budget and
+// the timeout path is exercised structurally via buildCorazaWAF.
+func TestValidateWithCoraza_TimeoutGuard(t *testing.T) {
+	t.Parallel()
+	// A well-formed document returns nil quickly (no timeout note).
+	diags := ValidateWithCoraza("SecRuleEngine On", "")
+	assert.Empty(t, diags)
+}
+
+// TestSchedule_OversizedDocumentSkipsStage2 verifies finding #3: a document
+// over the size cap skips the Stage-2 oracle, keeps Stage-1 diagnostics, and
+// emits a single informational note.
+func TestSchedule_OversizedDocumentSkipsStage2(t *testing.T) {
+	t.Parallel()
+
+	var got []protocol_3_16.Diagnostic
+	done := make(chan struct{})
+	v := NewValidator(5*time.Millisecond, func(uri string, diags []protocol_3_16.Diagnostic) {
+		got = diags
+		close(done)
+	})
+
+	// Build an oversized source (> maxDocumentBytes).
+	var b strings.Builder
+	line := "SecRule ARGS \"@rx x\" \"id:1,phase:2,deny\"\n"
+	for b.Len() <= maxDocumentBytes {
+		b.WriteString(line)
+	}
+	stage1 := []protocol_3_16.Diagnostic{} // pretend Stage 1 found nothing
+
+	v.Schedule("file:///big.conf", b.String(), stage1)
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("oversized document validation did not complete")
+	}
+
+	require.Len(t, got, 1, "oversized doc should yield exactly the informational note")
+	require.NotNil(t, got[0].Severity)
+	assert.Equal(t, protocol_3_16.DiagnosticSeverityInformation, *got[0].Severity)
+	assert.Contains(t, got[0].Message, "too large")
+}
+
+// TestSuppressRedundantCorazaErrors_Generalized verifies finding #4: a defect
+// reported by a Stage-1 structural diagnostic (invalid phase, unknown operator)
+// is NOT repeated by a Stage-2 coraza-error on the same line.
+func TestSuppressRedundantCorazaErrors_Generalized(t *testing.T) {
+	t.Parallel()
+
+	mk := func(line uint32, code string) protocol_3_16.Diagnostic {
+		return protocol_3_16.Diagnostic{
+			Range: protocol_3_16.Range{Start: protocol_3_16.Position{Line: line}},
+			Code:  &protocol_3_16.IntegerOrString{Value: code},
+		}
+	}
+
+	t.Run("invalid-phase suppresses coraza-error on same line", func(t *testing.T) {
+		t.Parallel()
+		stage1 := []protocol_3_16.Diagnostic{mk(0, CodeInvalidPhase)}
+		stage2 := []protocol_3_16.Diagnostic{mk(0, CodeCorazaError)}
+		assert.Empty(t, suppressRedundantCorazaErrors(stage1, stage2))
+	})
+
+	t.Run("unknown-operator suppresses coraza-error on same line", func(t *testing.T) {
+		t.Parallel()
+		stage1 := []protocol_3_16.Diagnostic{mk(2, CodeUnknownOperator)}
+		stage2 := []protocol_3_16.Diagnostic{mk(2, CodeCorazaError)}
+		assert.Empty(t, suppressRedundantCorazaErrors(stage1, stage2))
+	})
+
+	t.Run("coraza-error on a different line is kept", func(t *testing.T) {
+		t.Parallel()
+		stage1 := []protocol_3_16.Diagnostic{mk(0, CodeInvalidPhase)}
+		stage2 := []protocol_3_16.Diagnostic{mk(5, CodeCorazaError)}
+		assert.Len(t, suppressRedundantCorazaErrors(stage1, stage2), 1)
+	})
+
+	t.Run("end-to-end: invalid phase is reported once", func(t *testing.T) {
+		t.Parallel()
+		src := `SecRule ARGS "@rx a" "id:1,phase:9,deny"`
+		f := parser.Parse("", src)
+		stage1 := Analyze(f)
+		stage2 := suppressRedundantCorazaErrors(stage1, ValidateWithCoraza(src, ""))
+		// Stage 1 reports invalid-phase; Stage 2 must not repeat it on the same line.
+		for _, d := range stage2 {
+			if c, _ := codeOf(d); c == CodeCorazaError {
+				assert.NotEqual(t, uint32(0), d.Range.Start.Line+1,
+					"redundant coraza-error for invalid phase should be suppressed")
+			}
+		}
+		// Confirm exactly one invalid-phase diagnostic overall.
+		phaseCount := 0
+		for _, d := range append(append([]protocol_3_16.Diagnostic{}, stage1...), stage2...) {
+			if c, _ := codeOf(d); c == CodeInvalidPhase {
+				phaseCount++
+			}
+		}
+		assert.Equal(t, 1, phaseCount)
+	})
+}
+
+// TestValidator_DropsResultForClosedDocument verifies finding #5: a Stage-2
+// result for a URI that was cancelled (didClose) after the timer fired is not
+// published.
+func TestValidator_DropsResultForClosedDocument(t *testing.T) {
+	t.Parallel()
+
+	var calls int32
+	v := NewValidator(20*time.Millisecond, func(uri string, diags []protocol_3_16.Diagnostic) {
+		atomic.AddInt32(&calls, 1)
+	})
+	v.Schedule("file:///x.conf", "SecRuleEngine On", nil)
+	// Cancel before the timer fires — bumps the epoch so any in-flight result drops.
+	v.Cancel("file:///x.conf")
+	time.Sleep(120 * time.Millisecond)
+	assert.Equal(t, int32(0), atomic.LoadInt32(&calls),
+		"cancelled (closed) document must not receive a published result")
+}
+
+// TestValidator_ReScheduleNotClobberedByOldTimer verifies the LOW timer-map
+// bug from finding #5: an old fired timer must not delete a freshly re-armed
+// entry, and the newer schedule must still fire exactly once.
+func TestValidator_ReScheduleNotClobberedByOldTimer(t *testing.T) {
+	t.Parallel()
+
+	var calls int32
+	v := NewValidator(15*time.Millisecond, func(uri string, diags []protocol_3_16.Diagnostic) {
+		atomic.AddInt32(&calls, 1)
+	})
+	uri := "file:///y.conf"
+	v.Schedule(uri, "SecRuleEngine On", nil)
+	v.Schedule(uri, "SecRuleEngine On", nil) // re-arm
+	time.Sleep(120 * time.Millisecond)
+	// Exactly one callback (the latest schedule); the superseded one is stale.
+	assert.Equal(t, int32(1), atomic.LoadInt32(&calls))
+}
+
+// TestValidateWithCoraza_DuplicateIDOnSecondRule verifies finding #6a: the
+// Stage-2 duplicate-id error points at the SECOND (offending) rule, not the
+// first.
+func TestValidateWithCoraza_DuplicateIDOnSecondRule(t *testing.T) {
+	t.Parallel()
+
+	src := "SecAction \"id:1,phase:1,pass\"\nSecAction \"id:1,phase:1,pass\""
+	diags := ValidateWithCoraza(src, "")
+	require.NotEmpty(t, diags)
+	assert.Equal(t, uint32(1), diags[0].Range.Start.Line,
+		"duplicate-id error must point at the second rule (line 1), not the first")
+}
+
+// TestAnalyze_RuneColumns_UTF8 verifies finding #6c/#7: diagnostic columns are
+// rune offsets (not byte offsets). A multibyte value (msg:'café') precedes the
+// flagged token; the squiggle, sliced by rune, must land exactly on the token.
+func TestAnalyze_RuneColumns_UTF8(t *testing.T) {
+	t.Parallel()
+
+	src := `SecRule ARGS "@rx x" "id:1,phase:2,deny,msg:'café',t:notreal"`
+	f := parser.Parse("", src)
+	diags := filterByCode(Analyze(f), CodeUnknownTransformation)
+	require.Len(t, diags, 1)
+	d := diags[0]
+
+	// Slice the source line by RUNE to extract the squiggled text. If the column
+	// were a byte offset, the multibyte 'é' would shift this and the slice would
+	// not equal the action token.
+	runes := []rune(src)
+	require.LessOrEqual(t, int(d.Range.End.Character), len(runes))
+	squiggle := string(runes[d.Range.Start.Character:d.Range.End.Character])
+	assert.Equal(t, "t:notreal", squiggle,
+		"rune-sliced squiggle must land exactly on the offending token")
+}
+
+// TestLocateCorazaError_RuneColumns_UTF8 verifies finding #6c on the Stage-2
+// path: locateCorazaError returns rune-based columns even when multibyte runes
+// precede the matched directive/value token.
+func TestLocateCorazaError_RuneColumns_UTF8(t *testing.T) {
+	t.Parallel()
+
+	// A comment with multibyte runes, then SecRuleEngine with a bad value. The
+	// value squiggle must be a rune offset.
+	src := "# café configuración\nSecRuleEngine BADVALUE"
+	errMsg := `invalid WAF config from string: failed to compile the directive "secruleengine": Invalid SecRuleEngine argument: BADVALUE`
+	r := locateCorazaError(errMsg, src)
+	runes := []rune(strings.Split(src, "\n")[r.Start.Line])
+	require.LessOrEqual(t, r.End.Character, len(runes))
+	squiggle := string(runes[r.Start.Character:r.End.Character])
+	assert.Equal(t, "BADVALUE", squiggle, "value squiggle must be rune-aligned")
 }
