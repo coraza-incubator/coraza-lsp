@@ -15,13 +15,15 @@ package analysis
 
 import (
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
+	"testing/fstest"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/corazawaf/coraza/v3"
 	"github.com/corazawaf/coraza/v3/types"
@@ -54,6 +56,23 @@ const (
 	CodeUnknownOperator      DiagnosticCode = "unknown-operator"
 	CodeParseError           DiagnosticCode = "parse-error"
 	CodeCorazaError          DiagnosticCode = "coraza-error"
+)
+
+const (
+	// maxDocumentBytes is the largest document for which the Stage-2 Coraza
+	// oracle runs. Above this the document is too big to validate cheaply on
+	// every change (the oracle builds a fresh WAF each time), so Stage 2 is
+	// skipped and only the fast Stage-1 AST checks are kept.
+	maxDocumentBytes = 1 << 20 // 1 MiB
+
+	// maxDocumentLines is the upper bound on logical lines for the Stage-2
+	// oracle, mirroring maxDocumentBytes for pathological many-short-line files.
+	maxDocumentLines = 20000
+
+	// corazaBuildTimeout bounds the wall-clock time the Stage-2 oracle may spend
+	// building a WAF. A pathological input (e.g. a directive pointing at a FIFO
+	// or a huge data file) must never hang the validator goroutine forever.
+	corazaBuildTimeout = 3 * time.Second
 )
 
 // AllDiagnosticCodes lists every code emitted by this package. Used by
@@ -168,23 +187,6 @@ func analyzeRaw(f *parser.File, diags []protocol_3_16.Diagnostic) []protocol_3_1
 	for _, node := range f.Nodes {
 		rule, ok := node.(*parser.RuleNode)
 		if !ok {
-			continue
-		}
-
-		// Generic directive: check if it's known.
-		if gen, ok := node.(*parser.GenericDirectiveNode); ok {
-			if !knownDirectives[strings.ToLower(gen.Name)] {
-				diags = append(diags, protocol_3_16.Diagnostic{
-					Range:    toProtocolRange(gen.NameRange),
-					Severity: severityPtr(protocol_3_16.DiagnosticSeverityWarning),
-					Source:   strPtr("coraza-lsp"),
-					Code:     &protocol_3_16.IntegerOrString{Value: CodeUnknownDirective},
-					Message:  fmt.Sprintf("unknown directive %q", gen.Name),
-				})
-			}
-		}
-
-		if rule == nil {
 			continue
 		}
 
@@ -409,30 +411,49 @@ func analyzeRaw(f *parser.File, diags []protocol_3_16.Diagnostic) []protocol_3_1
 // It creates a fresh WAF instance for every call — this is safe to call concurrently
 // but each call is ~5ms. Always debounce before calling.
 //
-// dir is the directory of the file being validated. When non-empty, Coraza uses
-// it as the root filesystem so that relative data-file paths (e.g. @pmFromFile
-// php-variables.data) resolve correctly. Pass "" when no file path is known.
+// Security: the WAF is always built against a confined, empty in-memory root
+// filesystem (fstest.MapFS{}). Coraza resolves Include and @pmFromFile /
+// @ipMatchFromFile paths at compile time against this rootFS, so:
+//   - directives can never read arbitrary host files (no content leak back into
+//     diagnostics), and
+//   - no special file (FIFO/device) on the host can be opened and block the build.
+//
+// The build also runs under a hard wall-clock timeout (corazaBuildTimeout) so a
+// pathological input can never hang the validator goroutine, and a recover()
+// guards against any panic inside Coraza's parser.
+//
+// dir is accepted for backwards compatibility but intentionally ignored: the
+// rootFS is never derived from a (potentially untrusted) document path. Because
+// the rootFS is empty, file-reference errors from Include/@*FromFile are
+// inherently unresolvable in single-file mode and are suppressed rather than
+// reported as false positives.
 func ValidateWithCoraza(source, dir string) []protocol_3_16.Diagnostic {
-	cfg := coraza.NewWAFConfig().
-		WithDirectives(source).
-		WithErrorCallback(func(mr types.MatchedRule) {}) // suppress runtime alerts
+	_ = dir // see doc comment: rootFS is confined, never derived from dir.
 
-	if dir != "" {
-		cfg = cfg.WithRootFS(os.DirFS(dir))
-	}
-
-	_, err := coraza.NewWAF(cfg)
+	err := buildCorazaWAF(source)
 	if err == nil {
 		return nil
 	}
 
 	errMsg := err.Error()
 
-	// Suppress errors for @-prefixed virtual paths (e.g. "Include @coreruleset").
-	// These are runtime mount points that cannot be resolved in single-file mode.
-	// Use filepath.Base so the check works whether or not a dir prefix was added
-	// by WithRootFS (e.g. "/rules/@coreruleset" → base "@coreruleset").
-	if p := extractReadfilePathFromError(errMsg); p != "" && strings.HasPrefix(filepath.Base(p), "@") {
+	// Build timeout: a pathological directive made the oracle hang. Report a
+	// single generic note (with no host data) and bail.
+	if errMsg == errCorazaTimeout {
+		return []protocol_3_16.Diagnostic{{
+			Range:    protocol_3_16.Range{},
+			Severity: severityPtr(protocol_3_16.DiagnosticSeverityInformation),
+			Source:   strPtr("coraza"),
+			Code:     &protocol_3_16.IntegerOrString{Value: CodeCorazaError},
+			Message:  "Coraza validation timed out; semantic checks were skipped for this document",
+		}}
+	}
+
+	// Suppress file-reference errors. With the confined empty rootFS, Include and
+	// @pmFromFile/@ipMatchFromFile paths can never resolve, so any "file does not
+	// exist" / readfile error is an artifact of single-file validation, not a real
+	// defect. Suppressing also guarantees we never reflect a host path's contents.
+	if extractReadfilePathFromError(errMsg) != "" {
 		return nil
 	}
 
@@ -457,6 +478,44 @@ func ValidateWithCoraza(source, dir string) []protocol_3_16.Diagnostic {
 	}
 }
 
+// errCorazaTimeout is the sentinel error string returned by buildCorazaWAF when
+// the build exceeds corazaBuildTimeout.
+const errCorazaTimeout = "coraza build timed out"
+
+// confinedRootFS is the empty, in-memory filesystem the Stage-2 oracle is built
+// against. It contains no files, so Include/@pmFromFile/@ipMatchFromFile can
+// never escape to the host FS. A single shared value is safe: fstest.MapFS is
+// read-only and goroutine-safe for concurrent reads.
+var confinedRootFS fs.FS = fstest.MapFS{}
+
+// buildCorazaWAF builds a Coraza WAF from source against the confined rootFS,
+// under a wall-clock timeout and with panic recovery. It returns the build error
+// (or an error whose message equals errCorazaTimeout on timeout).
+func buildCorazaWAF(source string) error {
+	cfg := coraza.NewWAFConfig().
+		WithDirectives(source).
+		WithErrorCallback(func(mr types.MatchedRule) {}). // suppress runtime alerts
+		WithRootFS(confinedRootFS)
+
+	done := make(chan error, 1) // buffered so a late goroutine never blocks/leaks
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				done <- fmt.Errorf("coraza validation panicked: %v", r)
+			}
+		}()
+		_, err := coraza.NewWAF(cfg)
+		done <- err
+	}()
+
+	select {
+	case err := <-done:
+		return err
+	case <-time.After(corazaBuildTimeout):
+		return fmt.Errorf("%s", errCorazaTimeout)
+	}
+}
+
 // locateCorazaError searches source lines for the directive named in a Coraza
 // error message and returns a Range.
 //
@@ -470,6 +529,16 @@ func ValidateWithCoraza(source, dir string) []protocol_3_16.Diagnostic {
 // For unknown/invalid directive errors the range covers the directive name token.
 // Falls back to line 0 when no match is found.
 func locateCorazaError(errMsg, source string) parser.Range {
+	// Duplicate-id: Coraza reports `... duplicated rule id N` with no `id:` token,
+	// so point the diagnostic at the SECOND rule carrying that id (the offending
+	// definition), not the first. Without this the error lands on the original
+	// rule, which is misleading.
+	if dupID := extractDuplicatedRuleID(errMsg); dupID != "" {
+		if r, ok := locateNthRuleWithID(source, dupID, 2); ok {
+			return r
+		}
+	}
+
 	directive := extractDirectiveFromError(errMsg)
 	if directive == "" {
 		// Locate the file reference (Include directive or @pmFromFile operand).
@@ -517,9 +586,12 @@ func locateCorazaError(errMsg, source string) parser.Range {
 
 		col := max(strings.Index(strings.ToLower(raw), lowerToken), 0)
 
+		// Convert byte offsets to rune counts so Character is consistent with the
+		// parser's rune-based positions (see internal/parser/lexer.go).
+		startChar := utf8.RuneCountInString(raw[:col])
 		nameRange := parser.Range{
-			Start: parser.Position{Line: i, Character: col},
-			End:   parser.Position{Line: i, Character: col + len(token)},
+			Start: parser.Position{Line: i, Character: startChar},
+			End:   parser.Position{Line: i, Character: startChar + utf8.RuneCountInString(token)},
 		}
 
 		if !isCompile {
@@ -549,8 +621,8 @@ func locateCorazaError(errMsg, source string) parser.Range {
 		}
 
 		r := parser.Range{
-			Start: parser.Position{Line: i, Character: valStart},
-			End:   parser.Position{Line: i, Character: valEnd},
+			Start: parser.Position{Line: i, Character: utf8.RuneCountInString(raw[:valStart])},
+			End:   parser.Position{Line: i, Character: utf8.RuneCountInString(raw[:valEnd])},
 		}
 
 		if !firstFound {
@@ -611,6 +683,53 @@ func findFirstRuleWithVariableIssue(source string) (parser.Range, bool) {
 	return parser.Range{}, false
 }
 
+// extractDuplicatedRuleID parses the rule id out of a Coraza
+// "duplicated rule id N" error and returns it (e.g. "1"), or "" if the message
+// is not a duplicate-id error.
+func extractDuplicatedRuleID(errMsg string) string {
+	lower := strings.ToLower(errMsg)
+	const marker = "duplicated rule id "
+	idx := strings.Index(lower, marker)
+	if idx == -1 {
+		return ""
+	}
+	rest := lower[idx+len(marker):]
+	end := 0
+	for end < len(rest) && rest[end] >= '0' && rest[end] <= '9' {
+		end++
+	}
+	if end == 0 {
+		return ""
+	}
+	return rest[:end]
+}
+
+// locateNthRuleWithID parses source and returns the directive-name range of the
+// nth (1-based) rule whose id action equals ruleID. Returns false when fewer
+// than n such rules exist.
+func locateNthRuleWithID(source, ruleID string, n int) (parser.Range, bool) {
+	f := parser.Parse("", source)
+	count := 0
+	for _, node := range f.Nodes {
+		rule, ok := node.(*parser.RuleNode)
+		if !ok {
+			continue
+		}
+		idAction := rule.FindAction("id")
+		if idAction == nil {
+			continue
+		}
+		if strings.TrimSpace(idAction.Value) != ruleID {
+			continue
+		}
+		count++
+		if count == n {
+			return rule.NameRange, true
+		}
+	}
+	return parser.Range{}, false
+}
+
 // ruleContainsID reports whether the rule starting at line i (including any
 // backslash-continuation lines) contains "id:NNN" in its raw text.
 func ruleContainsID(lines []string, i int, ruleID string) bool {
@@ -634,6 +753,10 @@ func ruleContainsID(lines []string, i int, ruleID string) bool {
 //
 //	invalid actions for rule with operator: "ARGS "@rx b" "id:1002,phase:2,..."
 func extractRuleIDFromError(errMsg string) string {
+	// Operate entirely on the lowercased string: strings.ToLower can change the
+	// byte length (e.g. an invalid byte 0xFF folds to U+FFFD, 1→3 bytes; 'İ'
+	// folds to 2 bytes), so indexing `lower` while slicing `errMsg` panics. Rule
+	// IDs are ASCII digits, so reading them off `lower` is equivalent and safe.
 	lower := strings.ToLower(errMsg)
 	i := 0
 	for i < len(lower) {
@@ -642,7 +765,7 @@ func extractRuleIDFromError(errMsg string) string {
 			break
 		}
 		abs := i + idx
-		rest := errMsg[abs+3:]
+		rest := lower[abs+3:]
 		end := 0
 		for end < len(rest) && rest[end] >= '0' && rest[end] <= '9' {
 			end++
@@ -784,16 +907,18 @@ func findFileReference(path, source string) parser.Range {
 		lowerRaw := strings.ToLower(raw)
 		// Prefer an exact full-path match (e.g. Include /abs/path/file.conf).
 		if col := strings.Index(lowerRaw, lowerPath); col >= 0 {
+			startChar := utf8.RuneCountInString(raw[:col])
 			return parser.Range{
-				Start: parser.Position{Line: i, Character: col},
-				End:   parser.Position{Line: i, Character: col + len(path)},
+				Start: parser.Position{Line: i, Character: startChar},
+				End:   parser.Position{Line: i, Character: startChar + utf8.RuneCountInString(path)},
 			}
 		}
 		// Fall back to base-name match (e.g. @pmFromFile php-variables.data).
 		if col := strings.Index(lowerRaw, lowerBase); col >= 0 {
+			startChar := utf8.RuneCountInString(raw[:col])
 			return parser.Range{
-				Start: parser.Position{Line: i, Character: col},
-				End:   parser.Position{Line: i, Character: col + len(base)},
+				Start: parser.Position{Line: i, Character: startChar},
+				End:   parser.Position{Line: i, Character: startChar + utf8.RuneCountInString(base)},
 			}
 		}
 	}
@@ -1079,8 +1204,13 @@ type NotifyFunc func(uri string, diags []protocol_3_16.Diagnostic)
 // Performance: a fresh Coraza WAF is cheap (~5ms) and the 300ms debounce means
 // at most ~3 validations/second per document, which is well within budget.
 type Validator struct {
-	mu       sync.Mutex
-	timers   map[string]*time.Timer
+	mu     sync.Mutex
+	timers map[string]*time.Timer
+	// epoch tracks the current generation per URI. Cancel/CancelAll/re-Schedule
+	// bump it; a fired AfterFunc that captured an older epoch drops its callback.
+	// This makes the publish path close-aware (a closed document's stale Stage-2
+	// result is never published) without reaching into pkg/lsp.
+	epoch    map[string]uint64
 	delay    time.Duration
 	callback NotifyFunc
 }
@@ -1090,6 +1220,7 @@ type Validator struct {
 func NewValidator(delay time.Duration, callback NotifyFunc) *Validator {
 	return &Validator{
 		timers:   make(map[string]*time.Timer),
+		epoch:    make(map[string]uint64),
 		delay:    delay,
 		callback: callback,
 	}
@@ -1104,41 +1235,82 @@ func (v *Validator) Schedule(uri, source string, stage1 []protocol_3_16.Diagnost
 	if t, ok := v.timers[uri]; ok {
 		t.Stop()
 	}
+	// Bump the generation so any in-flight (already-fired) callback for this URI
+	// is recognised as stale and dropped.
+	v.epoch[uri]++
+	myEpoch := v.epoch[uri]
 
-	v.timers[uri] = time.AfterFunc(v.delay, func() {
+	var thisTimer *time.Timer
+	thisTimer = time.AfterFunc(v.delay, func() {
 		v.mu.Lock()
-		delete(v.timers, uri)
+		// Only remove our own map entry — a newer Schedule may have re-armed the
+		// timer for this URI between our firing and acquiring the lock; deleting
+		// it would orphan the new timer.
+		if v.timers[uri] == thisTimer {
+			delete(v.timers, uri)
+		}
+		stale := v.epoch[uri] != myEpoch
 		v.mu.Unlock()
+
+		// The document was cancelled (e.g. didClose) or superseded by a newer
+		// edit after this timer fired. Drop the result so we never publish
+		// diagnostics for a closed/outdated document.
+		if stale {
+			return
+		}
 
 		// Skip Stage 2 when Stage 1 already found parse errors — Coraza would
 		// produce confusing messages (e.g. "invalid actions") that are just
 		// symptoms of the same underlying syntax problem.
 		if hasParseErrors(stage1) {
-			v.callback(uri, stage1)
+			v.publish(uri, myEpoch, stage1)
 			return
 		}
 
-		// Derive the directory from the URI so Coraza can resolve relative paths
-		// (e.g. @pmFromFile data files alongside the conf file).
-		dir := ""
-		if after, ok := strings.CutPrefix(uri, "file://"); ok {
-			dir = filepath.Dir(after)
+		// Size guard: a huge document is too expensive to feed to the oracle on
+		// every change (a fresh WAF is built each time). Skip Stage 2 and keep the
+		// cheap Stage-1 AST findings, plus one informational note.
+		if oversized(source) {
+			all := make([]protocol_3_16.Diagnostic, 0, len(stage1)+1)
+			all = append(all, stage1...)
+			all = append(all, protocol_3_16.Diagnostic{
+				Range:    protocol_3_16.Range{},
+				Severity: severityPtr(protocol_3_16.DiagnosticSeverityInformation),
+				Source:   strPtr("coraza-lsp"),
+				Code:     &protocol_3_16.IntegerOrString{Value: CodeCorazaError},
+				Message:  "file too large for full semantic analysis; only fast structural checks were run",
+			})
+			v.publish(uri, myEpoch, all)
+			return
 		}
 
-		// Run Stage 2 and merge with Stage 1.
-		// Suppress Stage 2 coraza-errors that are already covered by a Stage 1
-		// unknown-variable diagnostic on the same line — the LSP warning is more
-		// precise and the Coraza repeat is just noise.
-		stage2 := ValidateWithCoraza(source, dir)
+		// Run Stage 2 and merge with Stage 1. The rootFS is confined inside
+		// ValidateWithCoraza, so the document URI/dir is intentionally not passed.
+		stage2 := ValidateWithCoraza(source, "")
 		stage2 = suppressRedundantCorazaErrors(stage1, stage2)
 		all := make([]protocol_3_16.Diagnostic, 0, len(stage1)+len(stage2))
 		all = append(all, stage1...)
 		all = append(all, stage2...)
-		v.callback(uri, all)
+		v.publish(uri, myEpoch, all)
 	})
+	v.timers[uri] = thisTimer
 }
 
-// Cancel stops any pending validation for the given URI.
+// publish invokes the callback only if myEpoch is still current for uri. This
+// guards the slow Stage-2 path: between building diagnostics and notifying, a
+// didClose/edit may have bumped the epoch, in which case the result is dropped.
+func (v *Validator) publish(uri string, myEpoch uint64, diags []protocol_3_16.Diagnostic) {
+	v.mu.Lock()
+	stale := v.epoch[uri] != myEpoch
+	v.mu.Unlock()
+	if stale {
+		return
+	}
+	v.callback(uri, diags)
+}
+
+// Cancel stops any pending validation for the given URI and invalidates any
+// in-flight callback for it (so results for a now-closed document are dropped).
 func (v *Validator) Cancel(uri string) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
@@ -1146,9 +1318,10 @@ func (v *Validator) Cancel(uri string) {
 		t.Stop()
 		delete(v.timers, uri)
 	}
+	v.epoch[uri]++
 }
 
-// CancelAll stops all pending validations.
+// CancelAll stops all pending validations and invalidates in-flight callbacks.
 func (v *Validator) CancelAll() {
 	v.mu.Lock()
 	defer v.mu.Unlock()
@@ -1156,31 +1329,79 @@ func (v *Validator) CancelAll() {
 		t.Stop()
 		delete(v.timers, uri)
 	}
+	for uri := range v.epoch {
+		v.epoch[uri]++
+	}
+}
+
+// stage1StructuralCodes are the Stage-1 diagnostic codes that are strictly
+// more precise than the generic Coraza error a defect would also trigger in
+// Stage 2. When Stage 1 reports one of these on a line, the overlapping
+// Stage-2 coraza-error on the same line is redundant and is suppressed so the
+// user sees exactly one (clear) message per defect.
+var stage1StructuralCodes = map[string]bool{
+	CodeInvalidPhase:          true,
+	CodeUnknownOperator:       true,
+	CodeDuplicateID:           true,
+	CodeInvalidID:             true,
+	CodeMissingID:             true,
+	CodeUnknownAction:         true,
+	CodeUnknownTransformation: true,
+	CodeMissingTransformation: true,
+	CodeUnknownVariable:       true,
+	CodeUnknownDirective:      true,
+	CodeInvalidSeverity:       true,
+	CodeUnknownCtlOption:      true,
+	CodeInvalidCtlValue:       true,
 }
 
 // suppressRedundantCorazaErrors removes Stage 2 coraza-error diagnostics that
-// are already covered by a Stage 1 unknown-variable warning on the same line.
-// When the LSP has already identified the offending variable precisely, the
-// generic Coraza "unknown variable" repeat is noise that confuses the user.
+// are already covered by a more-precise Stage 1 structural diagnostic on the
+// same line. Without this, a single defect (invalid phase, unknown operator,
+// duplicate id, ...) is double-reported — once by Stage 1 with an accurate
+// message/range and again by the generic Coraza oracle — which is confusing
+// noise. Stage 1's diagnostic is always the one kept.
 func suppressRedundantCorazaErrors(stage1, stage2 []protocol_3_16.Diagnostic) []protocol_3_16.Diagnostic {
-	// Build the set of lines that Stage 1 flagged with unknown-variable.
-	unknownVarLines := make(map[uint32]bool)
+	// Build the set of lines Stage 1 already flagged with a structural code.
+	coveredLines := make(map[uint32]bool)
 	for _, d := range stage1 {
-		if d.Code != nil && d.Code.Value == CodeUnknownVariable {
-			unknownVarLines[d.Range.Start.Line] = true
+		if d.Code == nil {
+			continue
+		}
+		if code, ok := d.Code.Value.(string); ok && stage1StructuralCodes[code] {
+			coveredLines[d.Range.Start.Line] = true
 		}
 	}
-	if len(unknownVarLines) == 0 {
+	if len(coveredLines) == 0 {
 		return stage2
 	}
-	filtered := stage2[:0:0] // avoid modifying the original slice
+	filtered := stage2[:0:0] // fresh backing array; never alias the input
 	for _, d := range stage2 {
-		if d.Code != nil && d.Code.Value == CodeCorazaError && unknownVarLines[d.Range.Start.Line] {
-			continue // suppressed: Stage 1 already reported this more precisely
+		if d.Code != nil && d.Code.Value == CodeCorazaError && coveredLines[d.Range.Start.Line] {
+			continue // suppressed: Stage 1 already reported this defect precisely
 		}
 		filtered = append(filtered, d)
 	}
 	return filtered
+}
+
+// oversized reports whether source exceeds the Stage-2 size limits. Counting
+// lines stops early once the line cap is reached so the check stays cheap even
+// for pathological many-short-line inputs.
+func oversized(source string) bool {
+	if len(source) > maxDocumentBytes {
+		return true
+	}
+	lines := 1
+	for i := 0; i < len(source); i++ {
+		if source[i] == '\n' {
+			lines++
+			if lines > maxDocumentLines {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // hasParseErrors reports whether any diagnostic in diags has CodeParseError.
