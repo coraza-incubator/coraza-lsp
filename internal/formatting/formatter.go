@@ -7,17 +7,34 @@ package formatting
 
 import (
 	"strings"
-	"unicode"
 
 	protocol_3_16 "github.com/tliron/glsp/protocol_3_16"
 )
 
-// trimRightSpace trims all trailing Unicode whitespace, not just ASCII space
-// and tab. SecLang rule files are practically ASCII, but accepting bytes like
-// \v, \f, or non-breaking space pasted from a browser must not make the
-// formatter non-idempotent.
+// secLangWS is the set of intra-line whitespace bytes the SecLang lexer
+// recognises (internal/parser/lexer.go isWS: space, tab, CR). The formatter
+// MUST use the same definition: trimming bytes the parser does NOT treat as
+// whitespace (e.g. \v, \f, NBSP) would turn a non-directive word like
+// "\fSeCACtion" into a real "SeCACtion" directive and silently change rule
+// semantics. \r is included because Windows line endings are stripped per line.
+const secLangWS = " \t\r"
+
+// isSecLangWS reports whether b is whitespace per the SecLang lexer.
+func isSecLangWS(b byte) bool { return b == ' ' || b == '\t' || b == '\r' }
+
+// trimRightSpace trims trailing SecLang whitespace (space, tab, CR) only.
 func trimRightSpace(s string) string {
-	return strings.TrimRightFunc(s, unicode.IsSpace)
+	return strings.TrimRight(s, secLangWS)
+}
+
+// trimSpace trims leading and trailing SecLang whitespace (space, tab, CR) only.
+func trimSpace(s string) string {
+	return strings.Trim(s, secLangWS)
+}
+
+// isBlank reports whether s contains only SecLang whitespace.
+func isBlank(s string) bool {
+	return strings.TrimLeft(s, secLangWS) == ""
 }
 
 // Format returns a list of text edits that normalise the SecLang source.
@@ -65,8 +82,8 @@ func formatSource(source string) string {
 		line := rawLines[i]
 
 		// Preserve blank lines (but collapse multiple consecutive blanks into one).
-		if strings.TrimSpace(line) == "" {
-			if len(out) > 0 && strings.TrimSpace(out[len(out)-1]) != "" {
+		if isBlank(line) {
+			if len(out) > 0 && !isBlank(out[len(out)-1]) {
 				out = append(out, "")
 			}
 			i++
@@ -74,22 +91,30 @@ func formatSource(source string) string {
 		}
 
 		// Preserve comment lines (strip trailing whitespace).
-		if strings.HasPrefix(strings.TrimSpace(line), "#") {
+		if strings.HasPrefix(strings.TrimLeft(line, secLangWS), "#") {
 			out = append(out, trimRightSpace(line))
 			i++
 			continue
 		}
 
-		// Collect continuation lines.
+		// Collect continuation lines and join them EXACTLY the way the parser's
+		// lexer does (internal/parser/lexer.go stitchContinuation): take each
+		// physical line as-is, strip only the trailing continuation backslash,
+		// and join the parts with a single space. The formatter must produce a
+		// logical line that the parser tokenizes identically to the original —
+		// any other join (e.g. concatenating with no separator, or TrimSpace-ing
+		// each part) would change the bytes the parser sees inside quoted spans
+		// (regex operator arguments, action values) and silently alter rule
+		// semantics. Whitespace outside quotes is normalised later by
+		// splitLogicalArgs, which leaves quoted content byte-identical.
 		var logicalParts []string
 		for i < len(rawLines) {
-			l := rawLines[i]
-			stripped := trimRightSpace(l)
-			if strings.HasSuffix(stripped, "\\") {
-				logicalParts = append(logicalParts, strings.TrimRight(stripped, "\\"))
+			raw := rawLines[i]
+			if strings.HasSuffix(raw, "\\") {
+				logicalParts = append(logicalParts, strings.TrimRight(raw, "\\"))
 				i++
 			} else {
-				logicalParts = append(logicalParts, stripped)
+				logicalParts = append(logicalParts, raw)
 				i++
 				break
 			}
@@ -122,7 +147,7 @@ func formatSource(source string) string {
 	}
 
 	// Trim trailing blank lines.
-	for len(out) > 0 && strings.TrimSpace(out[len(out)-1]) == "" {
+	for len(out) > 0 && isBlank(out[len(out)-1]) {
 		out = out[:len(out)-1]
 	}
 
@@ -131,7 +156,7 @@ func formatSource(source string) string {
 
 // formatLogicalLine normalises a single logical directive line.
 func formatLogicalLine(line string) string {
-	line = strings.TrimSpace(line)
+	line = trimSpace(line)
 	if line == "" {
 		return ""
 	}
