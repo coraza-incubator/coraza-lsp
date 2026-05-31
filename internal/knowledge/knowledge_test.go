@@ -188,11 +188,11 @@ func TestActionsHaveActionType(t *testing.T) {
 	for _, item := range allActions {
 		assert.NotEmpty(t, item.ActionType, "action %q must have ActionType", item.Name)
 		validTypes := map[string]bool{
-			"disruptive":    true,
-			"metadata":      true,
-			"flow":          true,
+			"disruptive":     true,
+			"metadata":       true,
+			"flow":           true,
 			"non-disruptive": true,
-			"data":          true,
+			"data":           true,
 		}
 		assert.True(t, validTypes[item.ActionType],
 			"action %q has invalid ActionType %q", item.Name, item.ActionType)

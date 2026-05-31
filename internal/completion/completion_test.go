@@ -355,9 +355,9 @@ func itemLabels(items []protocol_3_16.CompletionItem) []string {
 func TestDetectContext_CtlKey(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		line   string
-		cursor int
-		wantCtx CompletionContext
+		line       string
+		cursor     int
+		wantCtx    CompletionContext
 		wantPrefix string
 	}{
 		{
@@ -416,7 +416,7 @@ func TestDetectContext_CtlValue(t *testing.T) {
 			wantPrefix: "ruleEngine=On",
 		},
 		{
-			// ctl:requestBodyProcessor= 
+			// ctl:requestBodyProcessor=
 			line:       `SecAction "id:1,phase:1,pass,ctl:requestBodyProcessor=`,
 			cursor:     54,
 			wantCtx:    ContextCtlValue,

@@ -9,12 +9,12 @@ func TestUTF16Len(t *testing.T) {
 	}{
 		{"", 0},
 		{"abc", 3},
-		{"café", 4},     // é is BMP: 1 unit
-		{"€", 1},        // BMP
-		{"中文", 2},       // BMP CJK
-		{"a😀b", 4},      // 😀 (U+1F600) is astral: 2 units
-		{"😀😀", 4},       // two astral chars
-		{"x→y", 3},      // → is BMP
+		{"café", 4}, // é is BMP: 1 unit
+		{"€", 1},    // BMP
+		{"中文", 2},   // BMP CJK
+		{"a😀b", 4},  // 😀 (U+1F600) is astral: 2 units
+		{"😀😀", 4},   // two astral chars
+		{"x→y", 3},  // → is BMP
 	}
 	for _, c := range cases {
 		if got := UTF16Len(c.s); got != c.want {

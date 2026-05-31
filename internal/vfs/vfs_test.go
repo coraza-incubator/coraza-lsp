@@ -97,8 +97,8 @@ func TestMemFS_WalkDir_VisitsFilesAndSyntheticDirs(t *testing.T) {
 func TestMemFS_WalkDir_SkipDir(t *testing.T) {
 	t.Parallel()
 	mem := vfs.NewMemFS(map[string][]byte{
-		"/root/keep.conf":         []byte("k"),
-		"/root/skip/buried.conf":  []byte("b"),
+		"/root/keep.conf":          []byte("k"),
+		"/root/skip/buried.conf":   []byte("b"),
 		"/root/skip/deeper/x.conf": []byte("x"),
 	})
 

@@ -172,8 +172,8 @@ func TestAnalyze_SyntaxEdgeCases(t *testing.T) {
 			mustHave: []DiagnosticCode{CodeUnknownCtlOption},
 		},
 		{
-			name: "skipAfter to nonexistent marker (cross-file hint)",
-			src:  `SecRule ARGS "@rx x" "id:1,phase:2,pass,skipAfter:NOWHERE"`,
+			name:     "skipAfter to nonexistent marker (cross-file hint)",
+			src:      `SecRule ARGS "@rx x" "id:1,phase:2,pass,skipAfter:NOWHERE"`,
 			mustHave: []DiagnosticCode{CodeSkipAfterNotFound},
 		},
 		{

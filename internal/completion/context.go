@@ -133,7 +133,9 @@ func contextForArgs(directive string, argTokens []string, fullText, prefix strin
 // contextInSecRule determines where in a SecRule the cursor is.
 //
 // SecRule structure:  DIRECTIVE  VARS  "@OP_ARG"  "ACTIONS"
-//                                 ^         ^           ^
+//
+//	^         ^           ^
+//
 // The variable list is unquoted and precedes the first quoted string.
 // The operator is inside the first quoted string.
 // The action list is inside the second quoted string.

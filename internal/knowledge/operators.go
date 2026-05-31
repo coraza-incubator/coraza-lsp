@@ -47,17 +47,17 @@ var allOperators = []Item{
 	// register it (internal/operators has no containsWord); Coraza rejects it
 	// at parse time with `operator containsWord not found`.
 	{
-		Name:    "beginsWith",
-		Summary: "Check if the target starts with a string",
-		Syntax:  "@beginsWith PREFIX",
-		Example: `SecRule REQUEST_URI "@beginsWith /admin" "id:6,phase:1,deny"`,
+		Name:        "beginsWith",
+		Summary:     "Check if the target starts with a string",
+		Syntax:      "@beginsWith PREFIX",
+		Example:     `SecRule REQUEST_URI "@beginsWith /admin" "id:6,phase:1,deny"`,
 		Description: "**@beginsWith** returns true when the target value starts with the given prefix. Case-sensitive.",
 	},
 	{
-		Name:    "endsWith",
-		Summary: "Check if the target ends with a string",
-		Syntax:  "@endsWith SUFFIX",
-		Example: `SecRule REQUEST_FILENAME "@endsWith .bak" "id:7,phase:1,deny"`,
+		Name:        "endsWith",
+		Summary:     "Check if the target ends with a string",
+		Syntax:      "@endsWith SUFFIX",
+		Example:     `SecRule REQUEST_FILENAME "@endsWith .bak" "id:7,phase:1,deny"`,
 		Description: "**@endsWith** returns true when the target value ends with the given suffix. Case-sensitive.",
 	},
 	{
@@ -96,31 +96,31 @@ var allOperators = []Item{
 	// `ne` operator; it rejects `@ne` at parse time with `operator ne not
 	// found`. Use `!@eq` for a numeric not-equal test.
 	{
-		Name:    "gt",
-		Summary: "Numeric greater-than comparison",
-		Syntax:  "@gt NUMBER",
-		Example: `SecRule ARGS_COMBINED_SIZE "@gt 65536" "id:13,phase:2,deny"`,
+		Name:        "gt",
+		Summary:     "Numeric greater-than comparison",
+		Syntax:      "@gt NUMBER",
+		Example:     `SecRule ARGS_COMBINED_SIZE "@gt 65536" "id:13,phase:2,deny"`,
 		Description: "**@gt** returns true when the target numeric value is greater than the argument.",
 	},
 	{
-		Name:    "ge",
-		Summary: "Numeric greater-than-or-equal comparison",
-		Syntax:  "@ge NUMBER",
-		Example: `SecRule TX:anomaly_score "@ge 5" "id:14,phase:2,deny"`,
+		Name:        "ge",
+		Summary:     "Numeric greater-than-or-equal comparison",
+		Syntax:      "@ge NUMBER",
+		Example:     `SecRule TX:anomaly_score "@ge 5" "id:14,phase:2,deny"`,
 		Description: "**@ge** returns true when the target numeric value is greater than or equal to the argument.",
 	},
 	{
-		Name:    "lt",
-		Summary: "Numeric less-than comparison",
-		Syntax:  "@lt NUMBER",
-		Example: `SecRule TX:score "@lt 1" "id:15,phase:5,pass"`,
+		Name:        "lt",
+		Summary:     "Numeric less-than comparison",
+		Syntax:      "@lt NUMBER",
+		Example:     `SecRule TX:score "@lt 1" "id:15,phase:5,pass"`,
 		Description: "**@lt** returns true when the target numeric value is less than the argument.",
 	},
 	{
-		Name:    "le",
-		Summary: "Numeric less-than-or-equal comparison",
-		Syntax:  "@le NUMBER",
-		Example: `SecRule HIGHEST_SEVERITY "@le 2" "id:16,phase:5,deny"`,
+		Name:        "le",
+		Summary:     "Numeric less-than-or-equal comparison",
+		Syntax:      "@le NUMBER",
+		Example:     `SecRule HIGHEST_SEVERITY "@le 2" "id:16,phase:5,deny"`,
 		Description: "**@le** returns true when the target numeric value is less than or equal to the argument.",
 	},
 	{

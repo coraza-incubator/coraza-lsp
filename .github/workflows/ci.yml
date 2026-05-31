@@ -36,6 +36,19 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Check gofmt
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "::error::The following files are not gofmt-formatted:"
+            echo "$unformatted"
+            echo "Run: gofmt -w ."
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
       - name: Run tests (with race detector)
         run: go test -race -count=1 ./...
 
