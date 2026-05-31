@@ -5,9 +5,9 @@
 package parser
 
 import (
+	"github.com/coraza-incubator/coraza-lsp/internal/lsppos"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 )
 
 // ParseVariables parses a SecRule variable list string into VariableExpr nodes.
@@ -30,12 +30,12 @@ func ParseVariables(s string, offset Position) ([]VariableExpr, []ParseError) {
 	for _, part := range parts {
 		trimmed := strings.TrimSpace(part)
 		if trimmed == "" {
-			charOffset += utf8.RuneCountInString(part) + 1 // +1 for pipe
+			charOffset += lsppos.UTF16Len(part) + 1 // +1 for pipe
 			continue
 		}
 
 		// Track the start position of this variable in the source.
-		leadingSpaces := utf8.RuneCountInString(part) - utf8.RuneCountInString(strings.TrimLeft(part, " \t"))
+		leadingSpaces := lsppos.UTF16Len(part) - lsppos.UTF16Len(strings.TrimLeft(part, " \t"))
 		varStart := Position{Line: offset.Line, Character: charOffset + leadingSpaces}
 
 		expr, err := parseSingleVariable(trimmed, varStart, offset.Line)
@@ -45,7 +45,7 @@ func ParseVariables(s string, offset Position) ([]VariableExpr, []ParseError) {
 			exprs = append(exprs, expr)
 		}
 
-		charOffset += utf8.RuneCountInString(part) + 1 // +1 for pipe separator
+		charOffset += lsppos.UTF16Len(part) + 1 // +1 for pipe separator
 	}
 
 	return exprs, errs
@@ -73,7 +73,7 @@ func parseSingleVariable(s string, start Position, line int) (VariableExpr, *Par
 			Message: "expected variable name after prefix",
 			Range: Range{
 				Start: start,
-				End:   Position{Line: line, Character: start.Character + utf8.RuneCountInString(s)},
+				End:   Position{Line: line, Character: start.Character + lsppos.UTF16Len(s)},
 			},
 		}
 	}
@@ -97,7 +97,7 @@ func parseSingleVariable(s string, start Position, line int) (VariableExpr, *Par
 				Message: msg,
 				Range: Range{
 					Start: start,
-					End:   Position{Line: line, Character: start.Character + utf8.RuneCountInString(s)},
+					End:   Position{Line: line, Character: start.Character + lsppos.UTF16Len(s)},
 				},
 			}
 		}
@@ -110,7 +110,7 @@ func parseSingleVariable(s string, start Position, line int) (VariableExpr, *Par
 			Message: "empty variable name",
 			Range: Range{
 				Start: start,
-				End:   Position{Line: line, Character: start.Character + utf8.RuneCountInString(s)},
+				End:   Position{Line: line, Character: start.Character + lsppos.UTF16Len(s)},
 			},
 		}
 	}
@@ -118,7 +118,7 @@ func parseSingleVariable(s string, start Position, line int) (VariableExpr, *Par
 	// Wildcard suffix: COLLECTION* is equivalent to COLLECTION:*.
 	if pos < len(s) && s[pos] == '*' {
 		expr.Key = "*"
-		endChar := start.Character + utf8.RuneCountInString(s)
+		endChar := start.Character + lsppos.UTF16Len(s)
 		expr.Range = Range{
 			Start: start,
 			End:   Position{Line: line, Character: endChar},
@@ -144,7 +144,7 @@ func parseSingleVariable(s string, start Position, line int) (VariableExpr, *Par
 				Message: `unclosed regex in variable key: missing closing /`,
 				Range: Range{
 					Start: start,
-					End:   Position{Line: line, Character: start.Character + utf8.RuneCountInString(s)},
+					End:   Position{Line: line, Character: start.Character + lsppos.UTF16Len(s)},
 				},
 			}
 		} else {
@@ -152,7 +152,7 @@ func parseSingleVariable(s string, start Position, line int) (VariableExpr, *Par
 		}
 	}
 
-	endChar := start.Character + utf8.RuneCountInString(s)
+	endChar := start.Character + lsppos.UTF16Len(s)
 	expr.Range = Range{
 		Start: start,
 		End:   Position{Line: line, Character: endChar},
