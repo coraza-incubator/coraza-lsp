@@ -18,7 +18,10 @@ language server.
 - **Hover** — full markdown documentation for every language element.
 - **Go to definition** — jump from `skipAfter:MARKER` to `SecMarker MARKER`,
   or from `Include` to the included file.
-- **Document / workspace symbols** — navigate rules by id or message.
+- **Document / workspace symbols** — navigate rules by id, message or tag.
+- **Go to rule by ID** — run **Coraza: Go to Rule by ID** (Command Palette) and
+  type a rule id to jump straight to it. (Built on workspace symbols; open the
+  rule files, or set `"global": true` in `.coraza.json`, so they are indexed.)
 - **Formatting** — normalise whitespace and continuation lines on save.
 - **Quick-fixes** — add missing `id`, add `phase:2`, remove unknown directive.
 

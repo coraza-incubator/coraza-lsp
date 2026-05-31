@@ -72,6 +72,11 @@
         "command": "coraza-lsp.showOutputChannel",
         "title": "Show Output Channel",
         "category": "Coraza"
+      },
+      {
+        "command": "coraza-lsp.gotoRule",
+        "title": "Go to Rule by ID",
+        "category": "Coraza"
       }
     ],
     "configuration": {
