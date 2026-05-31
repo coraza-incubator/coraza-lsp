@@ -15,21 +15,25 @@ syntax match seclangContinuation /\\$/
 
 " ── Directive keywords ─────────────────────────────────────────────────────
 " All Sec* directives and Include (case-insensitive via 'syntax case ignore').
+" This list is kept in sync with internal/knowledge/directives.go — a Go test
+" (TestVimSyntaxCoversKnowledgeDirectives) fails CI if a known directive is
+" missing here. 'syntax case ignore' makes matching case-insensitive.
 syntax keyword seclangDirective
-  \ SecAction SecDefaultAction SecRule SecMarker
-  \ SecRuleEngine SecRequestBodyAccess SecResponseBodyAccess
-  \ SecAuditEngine SecAuditLog SecAuditLogParts SecAuditLogType
-  \ SecAuditLogStorageDir SecAuditLogRelevantStatus
-  \ SecDebugLog SecDebugLogLevel
-  \ SecDataDir SecTmpDir
-  \ SecUploadDir SecUploadKeepFiles SecUploadFileMode SecUploadFileLimit
-  \ SecRequestBodyLimit SecRequestBodyNoFilesLimit SecRequestBodyInMemoryLimit
-  \ SecResponseBodyLimit SecResponseBodyMimeType SecResponseBodyMimeTypesClear
-  \ SecArgumentSeparator SecCookieFormat SecUnicodeMapFile
-  \ SecStatusEngine SecPcreMatchLimit SecPcreMatchLimitRecursion
-  \ SecConnEngine SecReadStateLimit SecWriteStateLimit
-  \ SecComponentSignature SecGeoLookupDB SecGsbLookupDB
-  \ SecHashEngine SecHashKey SecHashParam SecHashMethodRx SecHashMethodPm
+  \ SecAction SecArgumentSeparator SecArgumentsLimit SecAuditEngine SecAuditLog
+  \ SecAuditLogDirMode SecAuditLogFileMode SecAuditLogFormat SecAuditLogParts SecAuditLogRelevantStatus
+  \ SecAuditLogStorageDir SecAuditLogType SecCollectionTimeout SecComponentSignature SecConnEngine
+  \ SecConnReadStateLimit SecConnWriteStateLimit SecCookieFormat SecDataDir SecDataset
+  \ SecDebugLog SecDebugLogLevel SecDefaultAction SecGeoLookupDB SecGsbLookupDb
+  \ SecHTTPBlKey SecHashEngine SecHashKey SecHashMethodPm SecHashMethodRx
+  \ SecHashParam SecIgnoreRuleCompilationErrors SecMarker SecPcreMatchLimit SecPcreMatchLimitRecursion
+  \ SecReadStateLimit SecRemoteRules SecRemoteRulesFailAction SecRequestBodyAccess SecRequestBodyInMemoryLimit
+  \ SecRequestBodyJsonDepthLimit SecRequestBodyLimit SecRequestBodyLimitAction SecRequestBodyNoFilesLimit SecResponseBodyAccess
+  \ SecResponseBodyLimit SecResponseBodyLimitAction SecResponseBodyMimeType SecResponseBodyMimeTypesClear SecRule
+  \ SecRuleEngine SecRulePerfTime SecRuleRemoveById SecRuleRemoveByMsg SecRuleRemoveByTag
+  \ SecRuleScript SecRuleUpdateActionById SecRuleUpdateTargetById SecRuleUpdateTargetByMsg SecRuleUpdateTargetByTag
+  \ SecSensorID SecServerSignature SecStatusEngine SecTmpDir SecUnicodeMap
+  \ SecUnicodeMapFile SecUploadDir SecUploadFileLimit SecUploadFileMode SecUploadKeepFiles
+  \ SecWebAppID SecWriteStateLimit
   \ Include
 
 " ── Variables (ALL_CAPS, with optional :key suffix) ────────────────────────
