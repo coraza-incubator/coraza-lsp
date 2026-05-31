@@ -296,7 +296,6 @@ func TestValidator_MultipleURIs(t *testing.T) {
 	assert.True(t, uris["file:///b.conf"])
 }
 
-
 // TestSuppressRedundantCorazaErrors verifies that Stage 2 coraza-error
 // diagnostics are removed when Stage 1 has already reported an unknown-variable
 // warning on the same line. This prevents the user from seeing two overlapping
@@ -812,11 +811,11 @@ func TestCleanCorazaMessage(t *testing.T) {
 func TestValidateWithCoraza_MessageAndPosition(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name         string
-		source       string
-		wantLine     uint32
-		wantMsgPart  string // substring the message must contain
-		wantMsgNoGo  string // substring that must NOT appear (Go internals)
+		name        string
+		source      string
+		wantLine    uint32
+		wantMsgPart string // substring the message must contain
+		wantMsgNoGo string // substring that must NOT appear (Go internals)
 	}{
 		{
 			name:        "SecDebugLogLevel non-numeric: squiggle on value, no strconv noise",
@@ -933,7 +932,7 @@ func TestStripQuotes(t *testing.T) {
 		{`'XXX'`, "XXX"},
 		{`XXX`, "XXX"},
 		{`""`, ""},
-		{`"`, `"`},        // single char — not a pair
+		{`"`, `"`},         // single char — not a pair
 		{`"abc'`, `"abc'`}, // mismatched quotes
 		{`"hello world"`, "hello world"},
 		{`''`, ""},
@@ -949,9 +948,9 @@ func TestStripQuotes(t *testing.T) {
 func TestExtractRuleIDFromError(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name    string
-		errMsg  string
-		wantID  string
+		name   string
+		errMsg string
+		wantID string
 	}{
 		{
 			name:   "id embedded in invalid actions message",
@@ -1115,7 +1114,7 @@ func TestLocateCorazaError_DuplicateDirective(t *testing.T) {
 		wantVal  string // value token that should be squiggled
 	}{
 		{
-			name: "SecRuleEngine On then SecRuleEngine XXX — error on second",
+			name:   "SecRuleEngine On then SecRuleEngine XXX — error on second",
 			errMsg: `invalid WAF config from string: failed to compile the directive "secruleengine": invalid rule engine status: "XXX"`,
 			source: "SecRuleEngine On\n" +
 				"SecRule ARGS \"@rx <script>\" \"id:1001,phase:2,deny\"\n" +
@@ -1125,7 +1124,7 @@ func TestLocateCorazaError_DuplicateDirective(t *testing.T) {
 			wantVal:  "XXX",
 		},
 		{
-			name: "user-reported case: valid config then broken SecRuleEngine on line 5",
+			name:   "user-reported case: valid config then broken SecRuleEngine on line 5",
 			errMsg: `invalid WAF config from string: failed to compile the directive "secruleengine": invalid rule engine status: "XXX"`,
 			source: "SecRuleEngine On\n" +
 				"SecRule ARGS \"@rx <script>\" \"id:1001,phase:2,deny,t:lowercase,msg:'XSS'\"\n" +
@@ -1137,7 +1136,7 @@ func TestLocateCorazaError_DuplicateDirective(t *testing.T) {
 			wantVal:  "XXX",
 		},
 		{
-			name: "SecAuditEngine repeated — error on second",
+			name:   "SecAuditEngine repeated — error on second",
 			errMsg: `invalid WAF config from string: failed to compile the directive "secauditengine": invalid audit engine status: badvalue`,
 			source: "SecAuditEngine On\n" +
 				"SecRuleEngine On\n" +
@@ -1146,7 +1145,7 @@ func TestLocateCorazaError_DuplicateDirective(t *testing.T) {
 			wantVal:  "badvalue",
 		},
 		{
-			name: "SecDebugLogLevel repeated — strconv match picks right line",
+			name:   "SecDebugLogLevel repeated — strconv match picks right line",
 			errMsg: `invalid WAF config from string: failed to compile the directive "secdebugloglevel": strconv.ParseInt: parsing "x": invalid syntax`,
 			source: "SecDebugLogLevel 5\n" +
 				"SecRuleEngine On\n" +
@@ -1156,7 +1155,7 @@ func TestLocateCorazaError_DuplicateDirective(t *testing.T) {
 		},
 		// --- quoted values ---
 		{
-			name: "SecRuleEngine double-quoted bad value",
+			name:   "SecRuleEngine double-quoted bad value",
 			errMsg: `invalid WAF config from string: failed to compile the directive "secruleengine": invalid rule engine status: "XXX"`,
 			source: "SecRuleEngine On\n" +
 				"SecRuleEngine \"XXX\"",
@@ -1164,7 +1163,7 @@ func TestLocateCorazaError_DuplicateDirective(t *testing.T) {
 			wantVal:  `"XXX"`,
 		},
 		{
-			name: "SecRuleEngine single-quoted bad value",
+			name:   "SecRuleEngine single-quoted bad value",
 			errMsg: `invalid WAF config from string: failed to compile the directive "secruleengine": invalid rule engine status: "XXX"`,
 			source: "SecRuleEngine On\n" +
 				"SecRuleEngine 'XXX'",
@@ -1172,7 +1171,7 @@ func TestLocateCorazaError_DuplicateDirective(t *testing.T) {
 			wantVal:  `'XXX'`,
 		},
 		{
-			name: "user-reported: full file with quoted bad value on line 5",
+			name:   "user-reported: full file with quoted bad value on line 5",
 			errMsg: `invalid WAF config from string: failed to compile the directive "secruleengine": invalid rule engine status: "XXX"`,
 			source: "SecRuleEngine On\n" +
 				"SecRule ARGS \"@rx <script>\" \"id:1001,phase:2,deny,t:lowercase,msg:'XSS attack detected'\"\n" +
@@ -2052,8 +2051,8 @@ func TestAnalyze_ChainRules(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name         string
-		src          string
+		name             string
+		src              string
 		wantMissingID    int // expected count of missing-id
 		wantMissingPhase int // expected count of missing-phase
 	}{
@@ -2503,10 +2502,10 @@ func TestAnalyze_Transformation(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		src       string
-		wantCode  string
-		wantNone  bool
+		name     string
+		src      string
+		wantCode string
+		wantNone bool
 	}{
 		{
 			name:     "known transformation is valid",

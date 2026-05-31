@@ -38,24 +38,24 @@ import (
 type DiagnosticCode = string
 
 const (
-	CodeMissingID         DiagnosticCode = "missing-id"
-	CodeMissingPhase      DiagnosticCode = "missing-phase"
-	CodeInvalidPhase      DiagnosticCode = "invalid-phase"
-	CodeInvalidID         DiagnosticCode = "invalid-id"
-	CodeDuplicateID       DiagnosticCode = "duplicate-id"
-	CodeUnknownDirective  DiagnosticCode = "unknown-directive"
-	CodeUnknownVariable   DiagnosticCode = "unknown-variable"
-	CodeUnknownCtlOption  DiagnosticCode = "unknown-ctl-option"
-	CodeInvalidCtlValue   DiagnosticCode = "invalid-ctl-value"
-	CodeSkipAfterNotFound    DiagnosticCode = "skipafter-not-found"
-	CodeInvalidMacro         DiagnosticCode = "invalid-macro"
-	CodeUnknownAction        DiagnosticCode = "unknown-action"
-	CodeUnknownTransformation  DiagnosticCode = "unknown-transformation"
-	CodeMissingTransformation  DiagnosticCode = "missing-transformation"
-	CodeInvalidSeverity      DiagnosticCode = "invalid-severity"
-	CodeUnknownOperator      DiagnosticCode = "unknown-operator"
-	CodeParseError           DiagnosticCode = "parse-error"
-	CodeCorazaError          DiagnosticCode = "coraza-error"
+	CodeMissingID             DiagnosticCode = "missing-id"
+	CodeMissingPhase          DiagnosticCode = "missing-phase"
+	CodeInvalidPhase          DiagnosticCode = "invalid-phase"
+	CodeInvalidID             DiagnosticCode = "invalid-id"
+	CodeDuplicateID           DiagnosticCode = "duplicate-id"
+	CodeUnknownDirective      DiagnosticCode = "unknown-directive"
+	CodeUnknownVariable       DiagnosticCode = "unknown-variable"
+	CodeUnknownCtlOption      DiagnosticCode = "unknown-ctl-option"
+	CodeInvalidCtlValue       DiagnosticCode = "invalid-ctl-value"
+	CodeSkipAfterNotFound     DiagnosticCode = "skipafter-not-found"
+	CodeInvalidMacro          DiagnosticCode = "invalid-macro"
+	CodeUnknownAction         DiagnosticCode = "unknown-action"
+	CodeUnknownTransformation DiagnosticCode = "unknown-transformation"
+	CodeMissingTransformation DiagnosticCode = "missing-transformation"
+	CodeInvalidSeverity       DiagnosticCode = "invalid-severity"
+	CodeUnknownOperator       DiagnosticCode = "unknown-operator"
+	CodeParseError            DiagnosticCode = "parse-error"
+	CodeCorazaError           DiagnosticCode = "coraza-error"
 )
 
 const (
@@ -146,7 +146,7 @@ var validSeverities = map[string]bool{
 	"notice":    true,
 	"info":      true,
 	"debug":     true,
-	"0": true, "1": true, "2": true, "3": true, "4": true, "5": true, "6": true, "7": true,
+	"0":         true, "1": true, "2": true, "3": true, "4": true, "5": true, "6": true, "7": true,
 }
 
 // Analyze runs Stage 1 diagnostics with the shipped defaults. Thin wrapper

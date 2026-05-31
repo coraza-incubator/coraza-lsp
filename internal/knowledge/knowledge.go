@@ -38,19 +38,19 @@ type Item struct {
 // Registry holds pre-built lookup maps for all SecLang element types.
 // All maps are keyed by lowercase name for case-insensitive lookup.
 type Registry struct {
-	Directives      []*Item
+	Directives       []*Item
 	DirectivesByName map[string]*Item
 
-	Variables      []*Item
+	Variables       []*Item
 	VariablesByName map[string]*Item
 
-	Operators      []*Item
+	Operators       []*Item
 	OperatorsByName map[string]*Item
 
-	Actions      []*Item
+	Actions       []*Item
 	ActionsByName map[string]*Item
 
-	Transformations      []*Item
+	Transformations       []*Item
 	TransformationsByName map[string]*Item
 }
 
