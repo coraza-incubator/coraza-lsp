@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	protocol_3_16 "github.com/tliron/glsp/protocol_3_16"
+
+	"github.com/coraza-incubator/coraza-lsp/internal/lsppos"
 )
 
 // secLangWS is the set of intra-line whitespace bytes the SecLang lexer
@@ -52,7 +54,7 @@ func Format(source string) []protocol_3_16.TextEdit {
 	// Count lines in original for the end position.
 	lines := strings.Split(source, "\n")
 	endLine := len(lines) - 1
-	endChar := len(lines[endLine])
+	endChar := lsppos.UTF16Len(lines[endLine])
 
 	return []protocol_3_16.TextEdit{
 		{

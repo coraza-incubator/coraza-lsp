@@ -27,6 +27,7 @@ import (
 	"github.com/coraza-incubator/coraza-lsp/internal/definition"
 	"github.com/coraza-incubator/coraza-lsp/internal/formatting"
 	"github.com/coraza-incubator/coraza-lsp/internal/hover"
+	"github.com/coraza-incubator/coraza-lsp/internal/lsppos"
 	"github.com/coraza-incubator/coraza-lsp/internal/parser"
 	"github.com/coraza-incubator/coraza-lsp/internal/symbols"
 )
@@ -386,12 +387,15 @@ func (s *Server) completionHandler(ctx *glsp.Context, params *protocol.Completio
 	if line >= len(lines) {
 		return nil, nil
 	}
+	// params.Position.Character is a UTF-16 column. DetectContext and the line
+	// slicing below are byte-based, so map it to a byte offset within this line.
+	// (The AST position checks further down keep the UTF-16 column, since AST
+	// ranges are UTF-16 too.)
 	partialLine := lines[line]
-	if char <= len(partialLine) {
-		partialLine = partialLine[:char]
-	}
+	byteCol := lsppos.UTF16ColumnToByte(partialLine, char)
+	partialLine = partialLine[:byteCol]
 
-	compCtx, prefix := completion.DetectContext(partialLine, char)
+	compCtx, prefix := completion.DetectContext(partialLine, byteCol)
 
 	// For multi-line SecRules, physical continuation lines (e.g. "    phase:2,\")
 	// don't start with a directive keyword so DetectContext returns

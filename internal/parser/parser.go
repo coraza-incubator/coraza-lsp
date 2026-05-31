@@ -5,8 +5,8 @@
 package parser
 
 import (
+	"github.com/coraza-incubator/coraza-lsp/internal/lsppos"
 	"strings"
-	"unicode/utf8"
 )
 
 // Parse parses a SecLang source file into an AST.
@@ -252,7 +252,7 @@ func parseOperator(s string, start Position, line int) (OperatorExpr, *ParseErro
 		// No @ prefix: treat whole string as a regex pattern (implicit @rx).
 		op.Name = "rx"
 		op.Argument = s[pos:]
-		endChar := start.Character + utf8.RuneCountInString(s)
+		endChar := start.Character + lsppos.UTF16Len(s)
 		op.Range = Range{Start: start, End: Position{Line: line, Character: endChar}}
 		op.NameRange = op.Range
 		return op, nil
@@ -270,7 +270,7 @@ func parseOperator(s string, start Position, line int) (OperatorExpr, *ParseErro
 			Message: "expected operator name after @",
 			Range: Range{
 				Start: start,
-				End:   Position{Line: line, Character: start.Character + utf8.RuneCountInString(s)},
+				End:   Position{Line: line, Character: start.Character + lsppos.UTF16Len(s)},
 			},
 		}
 	}
@@ -280,7 +280,7 @@ func parseOperator(s string, start Position, line int) (OperatorExpr, *ParseErro
 	if op.Negated {
 		negOffset = 1
 	}
-	nameRuneLen := utf8.RuneCountInString(op.Name)
+	nameRuneLen := lsppos.UTF16Len(op.Name)
 	op.NameRange = Range{
 		Start: Position{Line: line, Character: start.Character + negOffset + 1}, // +1 for @
 		End:   Position{Line: line, Character: start.Character + negOffset + 1 + nameRuneLen},
@@ -292,7 +292,7 @@ func parseOperator(s string, start Position, line int) (OperatorExpr, *ParseErro
 	}
 	op.Argument = s[pos:]
 
-	endChar := start.Character + utf8.RuneCountInString(s)
+	endChar := start.Character + lsppos.UTF16Len(s)
 	op.Range = Range{Start: start, End: Position{Line: line, Character: endChar}}
 
 	return op, nil
@@ -338,7 +338,6 @@ func collectArgTokens(tokens []Token) []Token {
 	}
 	return args
 }
-
 
 // directiveRange computes the Range covering all tokens in a group.
 func directiveRange(group []Token) Range {

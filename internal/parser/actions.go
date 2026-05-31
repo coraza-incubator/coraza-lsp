@@ -5,8 +5,8 @@
 package parser
 
 import (
+	"github.com/coraza-incubator/coraza-lsp/internal/lsppos"
 	"strings"
-	"unicode/utf8"
 )
 
 // parseActions parses an action list string into ActionExpr nodes.
@@ -68,7 +68,7 @@ func parseSingleAction(s string, start Position) ActionExpr {
 		expr.Value = unquoteSingle(raw)
 	}
 
-	endChar := start.Character + utf8.RuneCountInString(s)
+	endChar := start.Character + lsppos.UTF16Len(s)
 	expr.Range = Range{
 		Start: start,
 		End:   Position{Line: start.Line, Character: endChar},

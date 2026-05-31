@@ -300,12 +300,12 @@ func TestParse_ToleratesBadLine(t *testing.T) {
 func TestParse_SecRuleArgumentCounts(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name          string
-		src           string
-		wantVars      bool // expect variables parsed
-		wantOp        bool // expect operator parsed
-		wantActions   bool // expect actions parsed
-		wantParseErr  bool // expect a parse error
+		name         string
+		src          string
+		wantVars     bool // expect variables parsed
+		wantOp       bool // expect operator parsed
+		wantActions  bool // expect actions parsed
+		wantParseErr bool // expect a parse error
 	}{
 		{
 			// 0 args: just the directive keyword
@@ -334,30 +334,30 @@ func TestParse_SecRuleArgumentCounts(t *testing.T) {
 		{
 			// 4th arg is a properly closed quoted string — silently ignored,
 			// no parse error, the rule parses correctly from args 0-2.
-			name:        "4 args — extra closed quoted arg is silently ignored",
-			src:         `SecRule ARGS "@rx test" "id:1,phase:2,deny" "extra"`,
-			wantVars:    true,
-			wantOp:      true,
-			wantActions: true,
+			name:         "4 args — extra closed quoted arg is silently ignored",
+			src:          `SecRule ARGS "@rx test" "id:1,phase:2,deny" "extra"`,
+			wantVars:     true,
+			wantOp:       true,
+			wantActions:  true,
 			wantParseErr: false,
 		},
 		{
 			// 4th arg is an UNCLOSED quoted string — the pre-scan catches it
 			// and fires a parse error even though it's beyond arg[2].
-			name:        "4 args — extra unclosed quoted arg fires parse-error",
-			src:         `SecRule ARGS "@rx test" "id:1,phase:2,deny" "extra`,
-			wantVars:    true,
-			wantOp:      true,
-			wantActions: true,
+			name:         "4 args — extra unclosed quoted arg fires parse-error",
+			src:          `SecRule ARGS "@rx test" "id:1,phase:2,deny" "extra`,
+			wantVars:     true,
+			wantOp:       true,
+			wantActions:  true,
 			wantParseErr: true,
 		},
 		{
 			// 4th arg is an unquoted word — silently ignored (word beyond arg[2]).
-			name:        "4 args — extra unquoted word is silently ignored",
-			src:         `SecRule ARGS "@rx test" "id:1,phase:2,deny" extra_word`,
-			wantVars:    true,
-			wantOp:      true,
-			wantActions: true,
+			name:         "4 args — extra unquoted word is silently ignored",
+			src:          `SecRule ARGS "@rx test" "id:1,phase:2,deny" extra_word`,
+			wantVars:     true,
+			wantOp:       true,
+			wantActions:  true,
 			wantParseErr: false,
 		},
 	}
@@ -495,10 +495,10 @@ func TestParse_OperatorEdgeCases(t *testing.T) {
 func TestParse_VariableListEdgeCases(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name         string
-		varStr       string  // variable string passed to parseVariables
-		wantCount    int     // number of VariableExpr expected
-		wantErrPart  string  // substring of expected parse error, or "" for none
+		name        string
+		varStr      string // variable string passed to parseVariables
+		wantCount   int    // number of VariableExpr expected
+		wantErrPart string // substring of expected parse error, or "" for none
 	}{
 		{
 			// Trailing pipe — empty segment at end is silently skipped
@@ -543,7 +543,7 @@ func TestParse_VariableListEdgeCases(t *testing.T) {
 			// Multiple variables with a bare prefix in the middle
 			name:        "ARGS|!|FILES — bare ! in middle yields error and skips that segment",
 			varStr:      "ARGS|!|FILES",
-			wantCount:   2,  // ARGS and FILES parsed; ! segment errors
+			wantCount:   2, // ARGS and FILES parsed; ! segment errors
 			wantErrPart: "expected variable name after prefix",
 		},
 		{
@@ -610,9 +610,9 @@ func TestParse_VariableListEdgeCases(t *testing.T) {
 func TestParse_ActionListEdgeCases(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name        string
-		actionStr   string // content inside the outer double quotes
-		wantCount   int    // expected number of ActionExpr
+		name      string
+		actionStr string // content inside the outer double quotes
+		wantCount int    // expected number of ActionExpr
 	}{
 		{
 			// Empty action list — zero actions, not an error at the parser level.
@@ -751,9 +751,9 @@ func TestParse_ContinuationEdgeCases(t *testing.T) {
 func TestParse_CaseInsensitiveDirectives(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name      string
-		src       string
-		wantKind  NodeKind
+		name     string
+		src      string
+		wantKind NodeKind
 	}{
 		{
 			name:     "SECRULE uppercase — parsed as SecRule",
@@ -902,20 +902,20 @@ func TestParse_ExtraTrailingQuote(t *testing.T) {
 		},
 		{
 			// Single trailing " after a normally closed action list
-			name: "single trailing quote after closed action list",
-			src:  `SecRule ARGS "@rx test" "id:1001,phase:2,deny"` + `"`,
+			name:        "single trailing quote after closed action list",
+			src:         `SecRule ARGS "@rx test" "id:1001,phase:2,deny"` + `"`,
 			wantErrPart: "unclosed string literal",
 		},
 		{
 			// Extra trailing " on SecAction
-			name: "trailing quote after SecAction",
-			src:  `SecAction "id:1000,phase:1,pass,nolog"` + `"`,
+			name:        "trailing quote after SecAction",
+			src:         `SecAction "id:1000,phase:1,pass,nolog"` + `"`,
 			wantErrPart: "unclosed string literal",
 		},
 		{
 			// Double closing quotes on SecDefaultAction
-			name: "double closing quotes on SecDefaultAction",
-			src:  `SecDefaultAction "phase:2,deny,log""`,
+			name:        "double closing quotes on SecDefaultAction",
+			src:         `SecDefaultAction "phase:2,deny,log""`,
 			wantErrPart: "unclosed string literal",
 		},
 		{
@@ -1033,8 +1033,8 @@ func TestParse_ChainRules(t *testing.T) {
 		wantChains []bool // IsChained for each RuleNode in order
 	}{
 		{
-			name: "single rule — not chained",
-			src:  `SecRule ARGS "@rx x" "id:1,phase:2,deny"`,
+			name:       "single rule — not chained",
+			src:        `SecRule ARGS "@rx x" "id:1,phase:2,deny"`,
 			wantChains: []bool{false},
 		},
 		{
@@ -1190,11 +1190,11 @@ func TestParse_XMLXPathKey(t *testing.T) {
 func TestParse_VariableWildcard(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name       string
-		src        string
-		wantName   string
-		wantKey    string
-		wantErr    bool
+		name     string
+		src      string
+		wantName string
+		wantKey  string
+		wantErr  bool
 	}{
 		{
 			name:     "REQUEST_COOKIES* — wildcard no colon",

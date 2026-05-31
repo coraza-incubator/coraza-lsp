@@ -5,8 +5,8 @@
 package parser
 
 import (
+	"github.com/coraza-incubator/coraza-lsp/internal/lsppos"
 	"strings"
-	"unicode/utf8"
 )
 
 // Lexer tokenizes a SecLang source string.
@@ -50,7 +50,7 @@ func (l *Lexer) Tokenize() []Token {
 				Value:     line,
 				Line:      physLine,
 				StartChar: 0,
-				EndChar:   utf8.RuneCountInString(line),
+				EndChar:   lsppos.UTF16Len(line),
 			})
 			physLine++
 			continue
@@ -127,7 +127,7 @@ func tokenizeLogical(logical string, startLine int, lineMap []int, physLines []s
 		Value:     word,
 		Line:      physL,
 		StartChar: physC,
-		EndChar:   physC + utf8.RuneCountInString(word),
+		EndChar:   physC + lsppos.UTF16Len(word),
 	})
 
 	// Subsequent tokens: arguments (words or quoted strings).
@@ -152,7 +152,7 @@ func tokenizeLogical(logical string, startLine int, lineMap []int, physLines []s
 				Value:     word,
 				Line:      physL,
 				StartChar: physC,
-				EndChar:   physC + utf8.RuneCountInString(word),
+				EndChar:   physC + lsppos.UTF16Len(word),
 			})
 		}
 	}
@@ -163,9 +163,9 @@ func tokenizeLogical(logical string, startLine int, lineMap []int, physLines []s
 // logicalScanner scans a logical line with position tracking back to physical lines.
 type logicalScanner struct {
 	logical   string
-	pos       int    // byte position in logical
-	startLine int    // physical line of first part
-	lineMap   []int  // physical line index for each segment
+	pos       int   // byte position in logical
+	startLine int   // physical line of first part
+	lineMap   []int // physical line index for each segment
 	physLines []string
 }
 
@@ -302,12 +302,12 @@ func (s *logicalScanner) segmentBoundary(i int) int {
 
 // physPos maps a byte position in the logical line to (physicalLine, charOffset).
 // This is an approximation that works for the common case:
-// - Single-line directives map directly.
-// - Multi-line (continuation) directives: the position is in the first physical line
-//   unless it exceeds that line's length, in which case we advance to the next.
+//   - Single-line directives map directly.
+//   - Multi-line (continuation) directives: the position is in the first physical line
+//     unless it exceeds that line's length, in which case we advance to the next.
 func (s *logicalScanner) physPos(logicalByte int) (line, char int) {
 	if len(s.lineMap) == 1 {
-		return s.lineMap[0], utf8.RuneCountInString(s.physLines[s.lineMap[0]][:min(logicalByte, len(s.physLines[s.lineMap[0]]))])
+		return s.lineMap[0], lsppos.UTF16Len(s.physLines[s.lineMap[0]][:min(logicalByte, len(s.physLines[s.lineMap[0]]))])
 	}
 	// For continuation lines, walk through segments.
 	// Each non-last segment contributes exactly len(physLines[i]) bytes to the
@@ -326,7 +326,7 @@ func (s *logicalScanner) physPos(logicalByte int) (line, char int) {
 			if localByte > len(src) {
 				localByte = len(src)
 			}
-			return physIdx, utf8.RuneCountInString(src[:localByte])
+			return physIdx, lsppos.UTF16Len(src[:localByte])
 		}
 		offset += segLen
 	}

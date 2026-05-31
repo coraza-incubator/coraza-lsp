@@ -11,6 +11,7 @@ import (
 	protocol_3_16 "github.com/tliron/glsp/protocol_3_16"
 
 	"github.com/coraza-incubator/coraza-lsp/internal/knowledge"
+	"github.com/coraza-incubator/coraza-lsp/internal/lsppos"
 	"github.com/coraza-incubator/coraza-lsp/internal/parser"
 )
 
@@ -185,6 +186,8 @@ func macroVarAtPos(source string, line, char int) *knowledge.Item {
 	if line >= len(lines) {
 		return nil
 	}
+	// char arrives as a UTF-16 column; convert to a rune index for runes[].
+	char = lsppos.UTF16ColumnToRune(lines[line], char)
 	runes := []rune(lines[line])
 	if char >= len(runes) {
 		return nil
@@ -220,6 +223,8 @@ func wordAtPos(source string, line, char int) string {
 	if line >= len(lines) {
 		return ""
 	}
+	// char arrives as a UTF-16 column; convert to a rune index for runes[].
+	char = lsppos.UTF16ColumnToRune(lines[line], char)
 	runes := []rune(lines[line])
 	if char >= len(runes) {
 		return ""

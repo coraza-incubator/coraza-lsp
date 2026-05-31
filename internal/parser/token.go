@@ -12,7 +12,7 @@
 // All positions are 0-indexed (line and character) following the LSP convention.
 package parser
 
-import "unicode/utf8"
+import "github.com/coraza-incubator/coraza-lsp/internal/lsppos"
 
 // TokenType classifies a scanned token.
 type TokenType int
@@ -73,7 +73,7 @@ type Token struct {
 // values that span multiple physical lines.
 //
 // valueByte is a BYTE offset into Token.Value, but the returned char is a RUNE
-// column (matching the lexer, which reports columns as utf8.RuneCountInString).
+// column (matching the lexer, which reports columns as lsppos.UTF16Len).
 // We therefore convert the byte offset into a rune count relative to the start
 // of the active physical segment before adding it to that segment's start column,
 // so that multibyte content earlier in the value (e.g. msg:'café') does not shift
@@ -99,6 +99,6 @@ func (t Token) PhysPos(valueByte int) (physLine, physChar int) {
 		startCol = b.PhysChar
 		segByte = b.ValueByte
 	}
-	runeOff := utf8.RuneCountInString(t.Value[segByte:valueByte])
+	runeOff := lsppos.UTF16Len(t.Value[segByte:valueByte])
 	return line, startCol + runeOff
 }
