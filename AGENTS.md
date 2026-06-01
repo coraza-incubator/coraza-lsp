@@ -87,6 +87,11 @@ coraza-lsp/
 
 ## 5 Key Design Decisions
 
+> The rationale behind these (why a hand-written parser rather than reusing
+> Coraza's, how the Coraza oracle is confined, the knowledge/vim drift guards,
+> UTF-16 positions) is recorded in
+> [`docs/adr/0001-parser-knowledge-and-positions.md`](docs/adr/0001-parser-knowledge-and-positions.md).
+
 ### 1. Hand-written recursive-descent parser (zero external deps)
 
 We do **not** use ANTLR, PEG, or any parser generator. SecLang is line-oriented with
