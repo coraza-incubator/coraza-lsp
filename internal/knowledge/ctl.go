@@ -16,7 +16,7 @@ type CtlOption struct {
 
 // CtlOptions lists all recognised ctl sub-options in canonical casing.
 //
-// This set is the authoritative one accepted by Coraza v3.5.0's ctl action,
+// This set is the authoritative one accepted by Coraza v3.7.0's ctl action,
 // taken from the string switch in internal/actions/ctl.go (Init: the `switch
 // action` block, ~lines 433-475). Any name outside this set makes Coraza fail
 // with `unknown ctl action %q`, so adding speculative options here would
