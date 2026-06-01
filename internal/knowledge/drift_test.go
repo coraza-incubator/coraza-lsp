@@ -38,7 +38,7 @@ import (
 //     REMOTE_USER, SESSION, ctl:noAuditLog).
 //
 //   - REVERSE guard (non-fatal log): a checked-in ground-truth baseline of the
-//     names Coraza v3.5.0 registers (extracted from the module cache source,
+//     names Coraza v3.7.0 registers (extracted from the module cache source,
 //     see corazaGroundTruth* below) is compared against the KB. Names Coraza
 //     has that the KB lacks are logged so future Coraza upgrades surface new
 //     capabilities without breaking CI. Accepted-but-ignored (directiveUnsupported)
@@ -47,7 +47,7 @@ import (
 // When bumping the Coraza version, re-extract the ground-truth lists from the
 // new module-cache source and update the baselines below.
 
-const corazaPinnedVersion = "v3.5.0"
+const corazaPinnedVersion = "v3.7.0"
 
 // probe compiles a single directive and returns the parse error (nil = accepted).
 // Some Coraza operator constructors panic on a malformed argument (e.g.
@@ -186,7 +186,7 @@ func TestDriftCtlOptions(t *testing.T) {
 
 // --- REVERSE guard: ground-truth baselines (non-fatal) -----------------------
 //
-// These lists are the names Coraza v3.5.0 actually registers, extracted from
+// These lists are the names Coraza v3.7.0 actually registers, extracted from
 // the module-cache source:
 //   actions:         internal/actions/actions.go      (init() Register calls)
 //   operators:       internal/operators/*.go          (Register("...") calls)

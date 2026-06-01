@@ -4,9 +4,9 @@ go 1.25.0
 
 require (
 	github.com/bmatcuk/doublestar/v4 v4.10.0
-	github.com/corazawaf/coraza/v3 v3.5.0
+	github.com/corazawaf/coraza/v3 v3.7.0
 	github.com/fsnotify/fsnotify v1.9.0
-	github.com/gorilla/websocket v1.5.1
+	github.com/gorilla/websocket v1.5.3
 	github.com/stretchr/testify v1.11.1
 	github.com/tliron/commonlog v0.2.18
 	github.com/tliron/glsp v0.2.2
@@ -24,7 +24,7 @@ require (
 	github.com/kaptinlin/go-i18n v0.1.4 // indirect
 	github.com/kaptinlin/jsonschema v0.4.6 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
-	github.com/magefile/mage v1.15.1-0.20250615140142-78acbaf2e3ae // indirect
+	github.com/magefile/mage v1.17.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/muesli/termenv v0.15.2 // indirect
@@ -47,7 +47,7 @@ require (
 	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/term v0.41.0 // indirect
 	golang.org/x/text v0.35.0 // indirect
-	google.golang.org/protobuf v1.35.1 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	rsc.io/binaryregexp v0.2.0 // indirect
 )

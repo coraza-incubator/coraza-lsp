@@ -65,7 +65,7 @@ var allActions = []Item{
 			"to the specified URL. Use `status:301` for permanent redirects.",
 	},
 	// Note: ModSecurity 2.x `proxy` and `pause` actions are intentionally NOT
-	// listed here. Coraza v3.5.0 does not register them and rejects them at
+	// listed here. Coraza v3.7.0 does not register them and rejects them at
 	// parse time with `invalid action "proxy"` / `invalid action "pause"`
 	// (internal/actions/actions.go Get + appendRuleAction return the error).
 	// Listing them would suppress a correct unknown-action diagnostic.
@@ -149,7 +149,7 @@ var allActions = []Item{
 		Description: "**maturity** rates how well-tested the rule is: 1 (experimental) to 9 (production-ready).",
 	},
 	// Note: ModSecurity's `accuracy` metadata action is intentionally NOT listed
-	// here. Coraza v3.5.0 does not register it (it appears only inside a comment
+	// here. Coraza v3.7.0 does not register it (it appears only inside a comment
 	// in internal/actions/maturity.go) and rejects it at parse time with
 	// `invalid action "accuracy"`. Modern OWASP CRS v4 no longer emits `accuracy`,
 	// so dropping it does not introduce false positives on CRS.
@@ -289,7 +289,7 @@ var allActions = []Item{
 			"this rule matches. The marker must appear later in the same configuration.",
 	},
 	// Data actions (status is the only Coraza ActionTypeData action;
-	// `t` and `ctl` below are ActionTypeNondisruptive in Coraza v3.5.0)
+	// `t` and `ctl` below are ActionTypeNondisruptive in Coraza v3.7.0)
 	{
 		Name:       "status",
 		ActionType: "data",
