@@ -23,6 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	uripkg "github.com/coraza-incubator/coraza-lsp/internal/uri"
 )
 
 // binaryPath is set by TestMain to the compiled coraza-lsp binary.
@@ -244,7 +246,7 @@ func initClientInDir(t *testing.T, dir string) *lspClient {
 		"capabilities": map[string]any{},
 	}
 	if dir != "" {
-		params["rootUri"] = "file://" + dir
+		params["rootUri"] = uripkg.ToURI(dir)
 	} else {
 		params["rootUri"] = nil
 	}
@@ -727,10 +729,10 @@ func TestE2E_Config_SeverityOverrideOff(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(dir, ".coraza.json"), []byte(cfg), 0o644))
 
 	c := initClientInDir(t, dir)
-	uri := "file://" + dir + "/rule.conf"
-	c.didOpen(uri, `SecRule ARGS "@rx x" "phase:2,deny"`)
+	docURI := uripkg.ToURI(filepath.Join(dir, "rule.conf"))
+	c.didOpen(docURI, `SecRule ARGS "@rx x" "phase:2,deny"`)
 
-	diags := c.waitForDiagnostics(uri)
+	diags := c.waitForDiagnostics(docURI)
 	for _, d := range diags {
 		dm, _ := d.(map[string]any)
 		if dm == nil {
@@ -755,12 +757,12 @@ func TestE2E_Config_InitWritesParseableFile(t *testing.T) {
 	// Open any .conf — if the config is unparseable the server shows a
 	// window/showMessage with a warning. We simply wait a moment then
 	// request a hover and ensure no error comes back.
-	uri := "file://" + dir + "/sanity.conf"
-	c.didOpen(uri, `SecRule ARGS "@rx x" "id:1,phase:2,deny"`)
-	_ = c.waitForDiagnostics(uri)
+	docURI := uripkg.ToURI(filepath.Join(dir, "sanity.conf"))
+	c.didOpen(docURI, `SecRule ARGS "@rx x" "id:1,phase:2,deny"`)
+	_ = c.waitForDiagnostics(docURI)
 
 	hoverID := c.send("textDocument/hover", map[string]any{
-		"textDocument": map[string]any{"uri": uri},
+		"textDocument": map[string]any{"uri": docURI},
 		"position":     map[string]any{"line": 0, "character": 3},
 	})
 	resp := c.waitForResponse(hoverID)

@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/coraza-incubator/coraza-lsp/internal/parser"
+	"github.com/coraza-incubator/coraza-lsp/internal/uri"
 	"github.com/coraza-incubator/coraza-lsp/internal/vfs"
 )
 
@@ -153,9 +154,11 @@ func TestResolve_GenericDirective_ReturnsNil(t *testing.T) {
 
 func TestResolveIncludePath_Absolute(t *testing.T) {
 	t.Parallel()
-	// Use /tmp which always exists.
-	result := resolveIncludePath(testFS, "/tmp", "file:///etc/coraza/coraza.conf")
-	assert.Equal(t, "file:///tmp", result)
+	// Use an OS-absolute directory that exists (t.TempDir); "/tmp" is not an
+	// absolute path on Windows, so build the abs target portably.
+	abs := t.TempDir()
+	result := resolveIncludePath(testFS, abs, "file:///etc/coraza/coraza.conf")
+	assert.Equal(t, uri.ToURI(abs), result)
 }
 
 func TestResolveIncludePath_NonExistent(t *testing.T) {
@@ -176,8 +179,8 @@ func TestResolveIncludePath_FileURIRoutedThroughFS(t *testing.T) {
 	require.NoError(t, err)
 	defer os.Remove(tmp.Name())
 	tmp.Close()
-	got = resolveIncludePath(testFS, "file://"+tmp.Name(), "file:///etc/coraza.conf")
-	assert.Equal(t, "file://"+tmp.Name(), got)
+	got = resolveIncludePath(testFS, uri.ToURI(tmp.Name()), "file:///etc/coraza.conf")
+	assert.Equal(t, uri.ToURI(tmp.Name()), got)
 }
 
 func TestResolveIncludePath_RelativeExists(t *testing.T) {
@@ -189,7 +192,7 @@ func TestResolveIncludePath_RelativeExists(t *testing.T) {
 
 	dir := filepath.Dir(tmp.Name())
 	base := filepath.Base(tmp.Name())
-	baseURI := "file://" + filepath.Join(dir, "main.conf")
+	baseURI := uri.ToURI(filepath.Join(dir, "main.conf"))
 
 	result := resolveIncludePath(testFS, base, baseURI)
 	assert.Contains(t, result, "file://")
@@ -207,16 +210,4 @@ func TestResolveIncludePath_EmptyBaseDir(t *testing.T) {
 	// baseURI has no directory component.
 	result := resolveIncludePath(testFS, "rules.conf", "")
 	assert.Equal(t, "", result)
-}
-
-func TestURIDir(t *testing.T) {
-	t.Parallel()
-	dir := uriDir("file:///etc/coraza/rules.conf")
-	assert.Equal(t, "/etc/coraza", dir)
-}
-
-func TestURIDir_RootFile(t *testing.T) {
-	t.Parallel()
-	dir := uriDir("file:///rules.conf")
-	assert.Equal(t, "/", dir)
 }

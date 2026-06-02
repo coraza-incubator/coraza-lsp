@@ -10,7 +10,7 @@ let g:loaded_coraza_lsp_ftdetect = 1
 function! s:DetectSecLang() abort
   " Scan the first 20 lines for a recognisable SecLang directive.
   for l:lnum in range(1, min([20, line('$')]))
-    if getline(l:lnum) =~# '\v^\s*(SecRule|SecAction|SecMarker|SecDefaultAction|SecRuleEngine|SecRequestBodyAccess|SecResponseBodyAccess|SecAuditEngine|SecAuditLog|Include)\>'
+    if getline(l:lnum) =~# '\v^\s*(SecRule|SecAction|SecMarker|SecDefaultAction|SecRuleEngine|SecRequestBodyAccess|SecResponseBodyAccess|SecAuditEngine|SecAuditLog|Include)>'
       " Use `set filetype=seclang` rather than `setfiletype seclang` to
       " override the built-in `.conf` detection (which runs first and
       " would otherwise win because `setfiletype` is a no-op when the
