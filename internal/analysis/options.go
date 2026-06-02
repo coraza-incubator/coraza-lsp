@@ -28,6 +28,27 @@ type Options struct {
 	// because pkg/lsp populates it; reading it is a future enhancement. Do not
 	// rely on it to change diagnostic severities today.
 	EntrypointAware bool
+
+	// ExtraOperators is the set of additional operator names (from
+	// `.coraza.json`'s `extraOperators`) that the analyser should treat as
+	// known, suppressing unknown-operator diagnostics for plugin-registered
+	// operators. Keys are normalised: lowercased with any leading '@' stripped
+	// (operator names in the AST carry no leading '@'). A nil map is safe to
+	// index and simply means "no extras".
+	ExtraOperators map[string]bool
+
+	// ExtraActions is the set of additional action names (from `.coraza.json`'s
+	// `extraActions`) that the analyser should treat as known, suppressing
+	// unknown-action diagnostics for plugin-registered actions. Keys are
+	// lowercased. A nil map is safe to index.
+	ExtraActions map[string]bool
+
+	// ExtraTransformations is the set of additional transformation names (from
+	// `.coraza.json`'s `extraTransformations`) that the analyser should treat
+	// as known, suppressing unknown-transformation diagnostics for plugin-
+	// registered transformations. Keys are lowercased. A nil map is safe to
+	// index.
+	ExtraTransformations map[string]bool
 }
 
 // DefaultOptions returns an Options value equivalent to "no user config".

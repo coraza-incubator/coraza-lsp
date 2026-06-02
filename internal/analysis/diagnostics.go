@@ -162,13 +162,13 @@ func Analyze(f *parser.File) []protocol_3_16.Diagnostic {
 // strictness when an entrypoint is configured.
 // This function is safe to call from multiple goroutines.
 func AnalyzeWith(f *parser.File, opts Options) []protocol_3_16.Diagnostic {
-	return opts.apply(analyzeRaw(f, nil))
+	return opts.apply(analyzeRaw(f, nil, opts))
 }
 
 // analyzeRaw is the original body of Analyze — it emits diagnostics without
 // any severity overrides applied. Kept as a discrete function so AnalyzeWith
 // can run severity remapping as a single post-processing pass.
-func analyzeRaw(f *parser.File, diags []protocol_3_16.Diagnostic) []protocol_3_16.Diagnostic {
+func analyzeRaw(f *parser.File, diags []protocol_3_16.Diagnostic, opts Options) []protocol_3_16.Diagnostic {
 
 	// Collect parse errors from the AST.
 	for _, pe := range f.Errors {
@@ -288,7 +288,7 @@ func analyzeRaw(f *parser.File, diags []protocol_3_16.Diagnostic) []protocol_3_1
 			lower := action.LowerName()
 
 			// Unknown action name.
-			if !knownActions[lower] {
+			if !knownActions[lower] && !opts.ExtraActions[lower] {
 				diags = append(diags, protocol_3_16.Diagnostic{
 					Range:    toProtocolRange(action.Range),
 					Severity: severityPtr(protocol_3_16.DiagnosticSeverityWarning),
@@ -326,7 +326,7 @@ func analyzeRaw(f *parser.File, diags []protocol_3_16.Diagnostic) []protocol_3_1
 						Code:     &protocol_3_16.IntegerOrString{Value: CodeMissingTransformation},
 						Message:  "t requires a transformation name (e.g. t:lowercase)",
 					})
-				} else if !knownTransformations[strings.ToLower(action.Value)] {
+				} else if !knownTransformations[strings.ToLower(action.Value)] && !opts.ExtraTransformations[strings.ToLower(action.Value)] {
 					// Unknown but syntactically valid — warn rather than error, because
 					// custom/vendor transformations not in the knowledge base may exist.
 					diags = append(diags, protocol_3_16.Diagnostic{
@@ -357,7 +357,7 @@ func analyzeRaw(f *parser.File, diags []protocol_3_16.Diagnostic) []protocol_3_1
 
 		// Validate operator name.
 		if rule.Operator != nil && rule.Operator.Name != "" {
-			if !knownOperators[strings.ToLower(rule.Operator.Name)] {
+			if !knownOperators[strings.ToLower(rule.Operator.Name)] && !opts.ExtraOperators[strings.ToLower(rule.Operator.Name)] {
 				diags = append(diags, protocol_3_16.Diagnostic{
 					Range:    toProtocolRange(rule.Operator.NameRange),
 					Severity: severityPtr(protocol_3_16.DiagnosticSeverityWarning),

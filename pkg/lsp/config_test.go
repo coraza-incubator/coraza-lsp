@@ -68,6 +68,40 @@ func TestLoadConfig_AppliesSeverityOverrides(t *testing.T) {
 	assert.Equal(t, config.SeverityOff, opts.SeverityOverrides["unknown-variable"])
 }
 
+func TestOptionsFromConfig_ExtraNamesNormalized(t *testing.T) {
+	t.Parallel()
+	cfg := config.Config{
+		ExtraOperators:       []string{"@detectXSS", "MyCustomOp"},
+		ExtraActions:         []string{"MyAction"},
+		ExtraTransformations: []string{"MyTransform"},
+	}
+	opts := optionsFromConfig(cfg)
+
+	// Operator names: leading '@' stripped and lowercased.
+	assert.Equal(t, map[string]bool{"detectxss": true, "mycustomop": true}, opts.ExtraOperators)
+	// A name written without '@' still resolves.
+	assert.True(t, opts.ExtraOperators["mycustomop"])
+	// Actions and transformations: just lowercased.
+	assert.Equal(t, map[string]bool{"myaction": true}, opts.ExtraActions)
+	assert.Equal(t, map[string]bool{"mytransform": true}, opts.ExtraTransformations)
+}
+
+func TestOptionsFromConfig_OnlyExtrasStillBuildsOptions(t *testing.T) {
+	t.Parallel()
+	// No diagnostics/global/entrypoint — only Extra* set. The early-return guard
+	// must NOT fire, so the Extra* maps are populated rather than dropped.
+	cfg := config.Config{ExtraOperators: []string{"myop"}}
+	opts := optionsFromConfig(cfg)
+
+	assert.NotEqual(t, analysis.DefaultOptions(), opts, "extras-only config must produce non-default options")
+	assert.True(t, opts.ExtraOperators["myop"])
+}
+
+func TestOptionsFromConfig_EmptyIsDefault(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, analysis.DefaultOptions(), optionsFromConfig(config.Config{}))
+}
+
 func TestLoadConfig_ValidationErrorSurfaced(t *testing.T) {
 	t.Parallel()
 	s := newTestServer()

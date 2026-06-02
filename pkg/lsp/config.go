@@ -105,7 +105,9 @@ func (s *Server) analysisOptions() analysis.Options {
 }
 
 func optionsFromConfig(cfg config.Config) analysis.Options {
-	if len(cfg.Diagnostics) == 0 && !cfg.Global && cfg.Entrypoint == "" {
+	if len(cfg.Diagnostics) == 0 && !cfg.Global && cfg.Entrypoint == "" &&
+		len(cfg.ExtraOperators) == 0 && len(cfg.ExtraActions) == 0 &&
+		len(cfg.ExtraTransformations) == 0 {
 		return analysis.DefaultOptions()
 	}
 	return analysis.Options{
@@ -117,7 +119,31 @@ func optionsFromConfig(cfg config.Config) analysis.Options {
 		// plain non-empty check so the field reflects intent without implying
 		// behaviour that doesn't exist.
 		EntrypointAware: cfg.Entrypoint != "",
+		// Operator names in the AST carry no leading '@', so strip a single one
+		// from each configured name before normalising.
+		ExtraOperators:       normalizedSet(cfg.ExtraOperators, true),
+		ExtraActions:         normalizedSet(cfg.ExtraActions, false),
+		ExtraTransformations: normalizedSet(cfg.ExtraTransformations, false),
 	}
+}
+
+// normalizedSet builds a lowercased lookup set from names. When stripAt is
+// true a single leading '@' is removed from each name first (operator names in
+// the AST never carry the '@', so `@detectXSS` and `detectXSS` both map to
+// `detectxss`). Returns nil for an empty input so the resulting Options field
+// stays nil (indexing a nil map is safe and simply yields false).
+func normalizedSet(names []string, stripAt bool) map[string]bool {
+	if len(names) == 0 {
+		return nil
+	}
+	set := make(map[string]bool, len(names))
+	for _, n := range names {
+		if stripAt {
+			n = strings.TrimPrefix(n, "@")
+		}
+		set[strings.ToLower(n)] = true
+	}
+	return set
 }
 
 // WatchConfig starts a background goroutine that watches the config file for

@@ -63,6 +63,9 @@ Fields:
 | `filePatterns` | string[] | `["**/*.conf"]` | Files to treat as SecLang (combined with a SecLang-directive sniff). |
 | `ignore` | string[] | `["**/.git/**", "**/node_modules/**"]` | Globs excluded from indexing. |
 | `diagnostics` | map[string]string | `{}` | Per-code severity override: `error` / `warning` / `information` / `hint` / `off`. Keys are the diagnostic codes emitted by the server. |
+| `extraOperators` | string[] | `[]` | Plugin-registered operator names to treat as known so they aren't flagged unknown. May include a leading `@`. |
+| `extraActions` | string[] | `[]` | Plugin-registered action names to treat as known so they aren't flagged unknown. |
+| `extraTransformations` | string[] | `[]` | Plugin-registered transformation names to treat as known so they aren't flagged unknown. |
 
 The file is **hot-reloaded**: saving changes to `.coraza.json` re-applies the
 settings to every open document without restarting the editor.

@@ -80,6 +80,25 @@ type Config struct {
 	// Diagnostics maps diagnostic codes (e.g. "skipafter-not-found") to a
 	// severity override. Use "off" to suppress a diagnostic entirely.
 	Diagnostics map[string]Severity `json:"diagnostics,omitempty"`
+
+	// ExtraOperators are additional operator names that should be treated as
+	// known so the analyser stops flagging them as unknown. Use this for
+	// operators registered by a plugin that the LSP's built-in knowledge base
+	// does not ship. Names may be written with or without a leading '@'
+	// (e.g. "@detectXSS" and "detectXSS" are equivalent).
+	ExtraOperators []string `json:"extraOperators,omitempty"`
+
+	// ExtraActions are additional action names that should be treated as known
+	// so the analyser stops flagging them as unknown. Use this for actions
+	// registered by a plugin that the LSP's built-in knowledge base does not
+	// ship.
+	ExtraActions []string `json:"extraActions,omitempty"`
+
+	// ExtraTransformations are additional transformation names that should be
+	// treated as known so the analyser stops flagging them as unknown. Use this
+	// for transformations registered by a plugin that the LSP's built-in
+	// knowledge base does not ship.
+	ExtraTransformations []string `json:"extraTransformations,omitempty"`
 }
 
 // Default returns a Config populated with the shipped defaults.
@@ -111,6 +130,15 @@ func (c *Config) Merge(defaults Config) {
 	}
 	if c.Ignore == nil {
 		c.Ignore = append([]string(nil), defaults.Ignore...)
+	}
+	if c.ExtraOperators == nil {
+		c.ExtraOperators = append([]string(nil), defaults.ExtraOperators...)
+	}
+	if c.ExtraActions == nil {
+		c.ExtraActions = append([]string(nil), defaults.ExtraActions...)
+	}
+	if c.ExtraTransformations == nil {
+		c.ExtraTransformations = append([]string(nil), defaults.ExtraTransformations...)
 	}
 	if c.Diagnostics == nil {
 		c.Diagnostics = map[string]Severity{}
@@ -326,6 +354,15 @@ const Template = `{
   "ignore": ["**/.git/**", "**/node_modules/**"],
 
   "//": "Override diagnostic severities per code. Valid values: error, warning, information, hint, off. Codes match the 'code' field in LSP diagnostics.",
-  "diagnostics": {}
+  "diagnostics": {},
+
+  "//": "Extra operator names registered by plugins (with or without @). Suppresses unknown-operator diagnostics.",
+  "extraOperators": [],
+
+  "//": "Extra action names registered by plugins. Suppresses unknown-action diagnostics.",
+  "extraActions": [],
+
+  "//": "Extra transformation names registered by plugins. Suppresses unknown-transformation diagnostics.",
+  "extraTransformations": []
 }
 `
