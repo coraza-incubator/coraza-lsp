@@ -49,6 +49,21 @@
           "unknown-variable": "off"
         }
       ]
+    },
+    "extraOperators": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Additional operator names registered by plugins that should be treated as known, so they are not flagged as unknown operators. Names may be written with or without a leading '@'."
+    },
+    "extraActions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Additional action names registered by plugins that should be treated as known, so they are not flagged as unknown actions."
+    },
+    "extraTransformations": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Additional transformation names registered by plugins that should be treated as known, so they are not flagged as unknown transformations."
     }
   }
 }

@@ -101,6 +101,56 @@ func TestApply_DoesNotAliasInput(t *testing.T) {
 	assert.Equal(t, CodeMissingPhase, co)
 }
 
+// TestAnalyzeWith_ExtraOperators verifies a plugin-registered operator name
+// declared via Options.ExtraOperators is not flagged unknown (case-insensitive),
+// while an undeclared operator still is.
+func TestAnalyzeWith_ExtraOperators(t *testing.T) {
+	t.Parallel()
+	opts := Options{ExtraOperators: map[string]bool{"mycustomop": true}}
+
+	// Declared (case-insensitive) operator: no unknown-operator diagnostic.
+	f := parser.Parse("", `SecRule ARGS "@myCustomOp foo" "id:1,phase:2,deny"`)
+	assert.NotContains(t, diagCodes(AnalyzeWith(f, opts)), CodeUnknownOperator,
+		"declared extra operator must not be flagged unknown")
+
+	// Undeclared operator: still flagged.
+	g := parser.Parse("", `SecRule ARGS "@nopeOp foo" "id:2,phase:2,deny"`)
+	assert.Contains(t, diagCodes(AnalyzeWith(g, opts)), CodeUnknownOperator,
+		"undeclared operator must still be flagged unknown")
+}
+
+// TestAnalyzeWith_ExtraActions verifies a plugin-registered action name declared
+// via Options.ExtraActions is not flagged unknown (case-insensitive), while an
+// undeclared action still is.
+func TestAnalyzeWith_ExtraActions(t *testing.T) {
+	t.Parallel()
+	opts := Options{ExtraActions: map[string]bool{"mycustomaction": true}}
+
+	f := parser.Parse("", `SecRule ARGS "@rx x" "id:1,phase:2,myCustomAction"`)
+	assert.NotContains(t, diagCodes(AnalyzeWith(f, opts)), CodeUnknownAction,
+		"declared extra action must not be flagged unknown")
+
+	g := parser.Parse("", `SecRule ARGS "@rx x" "id:2,phase:2,nopeAction"`)
+	assert.Contains(t, diagCodes(AnalyzeWith(g, opts)), CodeUnknownAction,
+		"undeclared action must still be flagged unknown")
+}
+
+// TestAnalyzeWith_ExtraTransformations verifies a plugin-registered
+// transformation name declared via Options.ExtraTransformations is not flagged
+// unknown (case-insensitive), while an undeclared one still is.
+func TestAnalyzeWith_ExtraTransformations(t *testing.T) {
+	t.Parallel()
+	opts := Options{ExtraTransformations: map[string]bool{"mycustomtransform": true}}
+
+	f := parser.Parse("", `SecRule ARGS "@rx x" "id:1,phase:2,deny,t:myCustomTransform"`)
+	assert.NotContains(t, diagCodes(AnalyzeWith(f, opts)), CodeUnknownTransformation,
+		"declared extra transformation must not be flagged unknown")
+
+	g := parser.Parse("", `SecRule ARGS "@rx x" "id:2,phase:2,deny,t:nopeTransform"`)
+	assert.Contains(t, diagCodes(AnalyzeWith(g, opts)), CodeUnknownTransformation,
+		"undeclared transformation must still be flagged unknown")
+}
+
 // TestAnalyzeWith_NilOptionsMatchesAnalyze ensures AnalyzeWith with a zero
 // Options is byte-identical to Analyze.
 func TestAnalyzeWith_NilOptionsMatchesAnalyze(t *testing.T) {

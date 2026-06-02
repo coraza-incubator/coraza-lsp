@@ -133,6 +133,47 @@ func TestMerge_ExplicitEmptyIgnore(t *testing.T) {
 	assert.Equal(t, []string{}, file.Ignore)
 }
 
+func TestLoad_ExtraKnownNames(t *testing.T) {
+	t.Parallel()
+	src := `{
+		"extraOperators": ["@detectXSS", "myCustomOp"],
+		"extraActions": ["myCustomAction"],
+		"extraTransformations": ["myCustomTransform"]
+	}`
+	path := writeTemp(t, ".coraza.json", src)
+	cfg, err := Load(path)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	assert.Equal(t, []string{"@detectXSS", "myCustomOp"}, cfg.ExtraOperators)
+	assert.Equal(t, []string{"myCustomAction"}, cfg.ExtraActions)
+	assert.Equal(t, []string{"myCustomTransform"}, cfg.ExtraTransformations)
+}
+
+func TestMerge_ExtraKnownNamesNotAliased(t *testing.T) {
+	t.Parallel()
+	// Defaults carry Extra* slices; Merge must copy (not alias) them so mutating
+	// the merged config's backing array cannot corrupt the shared defaults.
+	defaults := Default()
+	defaults.ExtraOperators = []string{"defaultOp"}
+	defaults.ExtraActions = []string{"defaultAction"}
+	defaults.ExtraTransformations = []string{"defaultTransform"}
+
+	file := Config{}
+	file.Merge(defaults)
+
+	require.Equal(t, []string{"defaultOp"}, file.ExtraOperators)
+	require.Equal(t, []string{"defaultAction"}, file.ExtraActions)
+	require.Equal(t, []string{"defaultTransform"}, file.ExtraTransformations)
+
+	// Mutate the merged config's slices; the defaults must be unaffected.
+	file.ExtraOperators[0] = "mutated"
+	file.ExtraActions[0] = "mutated"
+	file.ExtraTransformations[0] = "mutated"
+	assert.Equal(t, "defaultOp", defaults.ExtraOperators[0], "merge must not alias ExtraOperators")
+	assert.Equal(t, "defaultAction", defaults.ExtraActions[0], "merge must not alias ExtraActions")
+	assert.Equal(t, "defaultTransform", defaults.ExtraTransformations[0], "merge must not alias ExtraTransformations")
+}
+
 func TestValidate_UnknownDiagnosticCode(t *testing.T) {
 	t.Parallel()
 	RegisterDiagnosticCodes("missing-id", "invalid-phase")
