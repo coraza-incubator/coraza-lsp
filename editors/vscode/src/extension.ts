@@ -50,7 +50,7 @@ export function activate(context: vscode.ExtensionContext): { client: LanguageCl
   context.subscriptions.push(
     vscode.commands.registerCommand('coraza-lsp.restartServer', async () => {
       if (client) {
-        await client.stop();
+        await stopClient(client);
         client.dispose();
       }
       client = createClient();
@@ -131,9 +131,22 @@ async function gotoRuleById(preset?: string): Promise<void> {
   editor.revealRange(target.location.range, vscode.TextEditorRevealType.InCenter);
 }
 
+// stopClient stops a LanguageClient tolerantly. LanguageClient.stop() rejects
+// when the client is still in the Starting state ("Client is not running and
+// can't be stopped"); a user hitting "restart" right after activation, or
+// deactivate firing mid-startup, would otherwise throw. We swallow that case —
+// the subsequent dispose()/replacement handles cleanup.
+async function stopClient(c: LanguageClient): Promise<void> {
+  try {
+    await c.stop();
+  } catch {
+    // client was still starting or already stopped — nothing to do.
+  }
+}
+
 export async function deactivate(): Promise<void> {
   if (client) {
-    await client.stop();
+    await stopClient(client);
     client = undefined;
   }
 }
