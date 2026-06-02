@@ -7,6 +7,7 @@ package lsp_test
 import (
 	"io"
 	"io/fs"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -41,8 +42,10 @@ Include /policy/rules/whitelist.conf`),
 	// from the FileSystem (Discover + workspace index).
 	srv.LoadConfig("/policy", func(string) {})
 
-	// Every path the server consulted must live inside the snapshot.
+	// Every path the server consulted must live inside the snapshot. Normalise
+	// separators first: on Windows the workspace walk yields backslash paths.
 	for _, p := range rec.paths() {
+		p = filepath.ToSlash(p)
 		assert.Truef(t,
 			strings.HasPrefix(p, "/policy") || strings.HasPrefix(p, "/"),
 			"server reached outside its FileSystem: %s", p)

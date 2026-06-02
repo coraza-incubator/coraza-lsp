@@ -28,11 +28,6 @@ jobs:
   go-test:
     name: Go tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    # Windows is advisory for now: it surfaced real file:// URI <-> path handling
-    # gaps (Include resolution builds URIs by concatenating OS paths, so it emits
-    # malformed file://C:\... URIs on Windows). Tracked for a dedicated fix; until
-    # then Windows runs but does not block. ubuntu + macOS are required.
-    continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
       fail-fast: false
       matrix:

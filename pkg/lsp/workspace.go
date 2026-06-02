@@ -13,6 +13,7 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 
 	"github.com/coraza-incubator/coraza-lsp/internal/parser"
+	"github.com/coraza-incubator/coraza-lsp/internal/uri"
 	"github.com/coraza-incubator/coraza-lsp/internal/vfs"
 )
 
@@ -73,10 +74,10 @@ func indexWorkspace(filesys vfs.FileSystem, root string, filePatterns, ignore []
 		if err != nil {
 			return nil
 		}
-		uri := "file://" + filepath.ToSlash(path)
-		out[uri] = &indexedFile{
+		fileURI := uri.ToURI(path)
+		out[fileURI] = &indexedFile{
 			Path: path,
-			AST:  parser.Parse(uri, string(data)),
+			AST:  parser.Parse(fileURI, string(data)),
 		}
 		return nil
 	})

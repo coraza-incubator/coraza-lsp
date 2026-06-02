@@ -179,13 +179,16 @@ func TestWatchConfig_StopIsIdempotent(t *testing.T) {
 
 func TestUriToPath(t *testing.T) {
 	t.Parallel()
+	// file:// URIs map to native OS paths (separators differ on Windows); the
+	// passthrough case is returned verbatim. internal/uri has the OS-specific
+	// unit tests; here we just confirm pkg/lsp delegates correctly.
 	cases := []struct {
 		in, want string
 	}{
-		{"file:///tmp/foo.conf", "/tmp/foo.conf"},
-		{"file:///home/user/.coraza.json", "/home/user/.coraza.json"},
-		{"file:///path%20with%20spaces/x.conf", "/path with spaces/x.conf"},
-		{"/already/a/path", "/already/a/path"}, // passthrough
+		{"file:///tmp/foo.conf", filepath.FromSlash("/tmp/foo.conf")},
+		{"file:///home/user/.coraza.json", filepath.FromSlash("/home/user/.coraza.json")},
+		{"file:///path%20with%20spaces/x.conf", filepath.FromSlash("/path with spaces/x.conf")},
+		{"/already/a/path", "/already/a/path"}, // passthrough (not a file:// URI)
 	}
 	for _, tc := range cases {
 		t.Run(tc.in, func(t *testing.T) {

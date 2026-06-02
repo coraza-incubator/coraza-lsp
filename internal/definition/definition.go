@@ -12,6 +12,7 @@ import (
 	protocol_3_16 "github.com/tliron/glsp/protocol_3_16"
 
 	"github.com/coraza-incubator/coraza-lsp/internal/parser"
+	"github.com/coraza-incubator/coraza-lsp/internal/uri"
 	"github.com/coraza-incubator/coraza-lsp/internal/vfs"
 )
 
@@ -87,26 +88,26 @@ func resolveIncludePath(filesys vfs.FileSystem, path, baseURI string) string {
 		// Route the file:// target through the provided filesystem rather than
 		// returning it verbatim — otherwise an Include of e.g. file:///etc/passwd
 		// would bypass the embedder's VFS sandbox entirely.
-		p := strings.TrimPrefix(path, "file://")
+		p := uri.ToPath(path)
 		if fileExists(filesys, p) {
-			return "file://" + p
+			return uri.ToURI(p)
 		}
 		return ""
 	}
 	if filepath.IsAbs(path) {
 		if fileExists(filesys, path) {
-			return "file://" + path
+			return uri.ToURI(path)
 		}
 		return ""
 	}
 	// Relative path: resolve against the directory of the base URI.
-	baseDir := uriDir(baseURI)
+	baseDir := uri.Dir(baseURI)
 	if baseDir == "" {
 		return ""
 	}
 	resolved := filepath.Join(baseDir, path)
 	if fileExists(filesys, resolved) {
-		return "file://" + resolved
+		return uri.ToURI(resolved)
 	}
 	return ""
 }
@@ -114,11 +115,6 @@ func resolveIncludePath(filesys vfs.FileSystem, path, baseURI string) string {
 func fileExists(filesys vfs.FileSystem, path string) bool {
 	_, err := filesys.Stat(path)
 	return err == nil
-}
-
-func uriDir(uri string) string {
-	path := strings.TrimPrefix(uri, "file://")
-	return filepath.Dir(path)
 }
 
 func toProtoRange(r parser.Range) protocol_3_16.Range {

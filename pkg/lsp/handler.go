@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -30,6 +29,7 @@ import (
 	"github.com/coraza-incubator/coraza-lsp/internal/lsppos"
 	"github.com/coraza-incubator/coraza-lsp/internal/parser"
 	"github.com/coraza-incubator/coraza-lsp/internal/symbols"
+	"github.com/coraza-incubator/coraza-lsp/internal/uri"
 )
 
 const serverName = "coraza-lsp"
@@ -298,22 +298,9 @@ func workspaceRoot(params *protocol.InitializeParams) string {
 	return "."
 }
 
-// uriToPath converts a file:// URI to an OS path, handling Windows drive
-// letters and URL-encoded characters. Best-effort — falls back to the raw
-// input if parsing fails.
-func uriToPath(uri string) string {
-	if strings.HasPrefix(uri, "file://") {
-		if u, err := url.Parse(uri); err == nil {
-			p := u.Path
-			// Windows: file:///C:/foo → u.Path is "/C:/foo"; drop the leading slash.
-			if filepath.VolumeName(strings.TrimPrefix(p, "/")) != "" {
-				p = strings.TrimPrefix(p, "/")
-			}
-			return filepath.FromSlash(p)
-		}
-	}
-	return uri
-}
+// uriToPath converts a file:// URI to an OS path (Windows drive letters and
+// percent-encoding handled). See internal/uri for the canonical mapping.
+func uriToPath(s string) string { return uri.ToPath(s) }
 
 // ---- document sync ---------------------------------------------------------
 
