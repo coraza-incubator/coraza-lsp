@@ -481,7 +481,14 @@ func (s *Server) codeActionHandler(ctx *glsp.Context, params *protocol.CodeActio
 	if doc == nil {
 		return nil, nil
 	}
-	actions := codeactions.CodeActionsForDiagnostics(params.Context.Diagnostics, doc.AST, doc.Content, params.Range, string(params.TextDocument.URI))
+	// Re-derive the diagnostics from our own analysis rather than trusting
+	// params.Context.Diagnostics: glsp's IntegerOrString.UnmarshalJSON has a value
+	// receiver, so a Diagnostic's `code` sent back by the client never populates
+	// (Code.Value stays nil) and code-based quick-fixes would never match. Our
+	// freshly-computed diagnostics carry the correct codes and overlap the same
+	// requested range.
+	diags := analysis.AnalyzeWith(doc.AST, s.analysisOptions())
+	actions := codeactions.CodeActionsForDiagnostics(diags, doc.AST, doc.Content, params.Range, string(params.TextDocument.URI))
 	if len(actions) == 0 {
 		return nil, nil
 	}

@@ -773,3 +773,98 @@ func TestE2E_VersionInfo(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(out), "coraza-lsp")
 }
+
+// TestE2E_CodeAction_AddMissingID proves the missing-id quick-fix is produced
+// over the wire AND that its WorkspaceEdit targets the real document URI (the
+// HIGH bug fixed in PR #8 was that edits were keyed on an empty document).
+func TestE2E_CodeAction_AddMissingID(t *testing.T) {
+	c := startClient(t)
+	initID := c.send("initialize", map[string]any{
+		"processId":    os.Getpid(),
+		"rootUri":      nil,
+		"capabilities": map[string]any{},
+	})
+	c.waitForResponse(initID)
+	c.notify("initialized", map[string]any{})
+
+	const uri = "file:///codeaction-test.conf"
+	c.didOpen(uri, `SecRule ARGS "@rx x" "phase:2,deny"`)
+
+	// Find the missing-id diagnostic to feed into the code-action request.
+	diags := c.waitForDiagnostics(uri)
+	require.NotEmpty(t, diags)
+	var missing map[string]any
+	for _, d := range diags {
+		dm := d.(map[string]any)
+		if code, _ := dm["code"].(string); code == "missing-id" {
+			missing = dm
+		}
+	}
+	require.NotNil(t, missing, "expected a missing-id diagnostic")
+
+	caID := c.send("textDocument/codeAction", map[string]any{
+		"textDocument": map[string]any{"uri": uri},
+		"range":        missing["range"],
+		"context":      map[string]any{"diagnostics": []any{missing}},
+	})
+	resp := c.waitForResponse(caID)
+	require.Nil(t, resp["error"])
+
+	dbg, _ := json.Marshal(resp["result"])
+	t.Logf("CA RESULT: %s", dbg)
+	actions, ok := resp["result"].([]any)
+	require.True(t, ok, "code action result should be an array")
+	require.NotEmpty(t, actions, "expected at least one quick-fix")
+
+	// Some action must carry a WorkspaceEdit keyed on the real document URI.
+	var foundEditForURI bool
+	for _, a := range actions {
+		am := a.(map[string]any)
+		edit, _ := am["edit"].(map[string]any)
+		if edit == nil {
+			continue
+		}
+		changes, _ := edit["changes"].(map[string]any)
+		if _, has := changes[uri]; has {
+			foundEditForURI = true
+		}
+	}
+	assert.True(t, foundEditForURI, "a quick-fix must edit the real document URI %q", uri)
+}
+
+// TestE2E_WorkspaceSymbol_ByID proves a rule can be located by its id over the
+// wire — the backbone of the "Go to Rule by ID" command.
+func TestE2E_WorkspaceSymbol_ByID(t *testing.T) {
+	c := startClient(t)
+	initID := c.send("initialize", map[string]any{
+		"processId":    os.Getpid(),
+		"rootUri":      nil,
+		"capabilities": map[string]any{},
+	})
+	c.waitForResponse(initID)
+	c.notify("initialized", map[string]any{})
+
+	const uri = "file:///wssym-test.conf"
+	c.didOpen(uri, "SecRule ARGS \"@rx x\" \"id:942100,phase:2,deny,msg:'SQLi'\"")
+
+	symID := c.send("workspace/symbol", map[string]any{"query": "942100"})
+	resp := c.waitForResponse(symID)
+	require.Nil(t, resp["error"])
+
+	syms, ok := resp["result"].([]any)
+	require.True(t, ok, "workspace/symbol result should be an array")
+	require.NotEmpty(t, syms, "expected a symbol for rule id 942100")
+
+	var found bool
+	for _, s := range syms {
+		sm := s.(map[string]any)
+		name, _ := sm["name"].(string)
+		loc, _ := sm["location"].(map[string]any)
+		if loc != nil && loc["uri"] == uri && containsStr(name, "942100") {
+			found = true
+		}
+	}
+	assert.True(t, found, "rule 942100 should be locatable by id via workspace/symbol")
+}
+
+func containsStr(s, sub string) bool { return strings.Contains(s, sub) }
