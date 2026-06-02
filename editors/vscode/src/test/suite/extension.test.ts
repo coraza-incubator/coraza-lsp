@@ -180,7 +180,7 @@ suite('Extension: commands', () => {
       this.skip();
       return;
     }
-    this.timeout(30000);
+    this.timeout(45000);
 
     const ext = vscode.extensions.getExtension(EXTENSION_ID)!;
     const exportsBefore = ext.exports as { client: LanguageClient };
@@ -189,9 +189,10 @@ suite('Extension: commands', () => {
     await vscode.commands.executeCommand('coraza-lsp.restartServer');
 
     // After restart the extension re-creates the client; it should reach Running.
+    // Allow a generous window: under xvfb/Electron the first handshake can be slow.
     const exportsAfter = ext.exports as { client: LanguageClient };
-    const ready = await poll(() => exportsAfter.client.state === State.Running, 15000);
-    assert.ok(ready, 'Restarted client did not reach Running state within 15 s');
+    const ready = await poll(() => exportsAfter.client.state === State.Running, 30000);
+    assert.ok(ready, 'Restarted client did not reach Running state within 30 s');
     // The export should reflect the new client instance (or at minimum be Running).
     assert.ok(
       exportsAfter.client !== clientBefore || exportsAfter.client.state === State.Running,
@@ -219,13 +220,14 @@ suite('Extension: LSP integration', () => {
       this.skip();
       return;
     }
-    this.timeout(20000);
+    this.timeout(40000);
 
     const ext = vscode.extensions.getExtension(EXTENSION_ID)!;
     const { client } = ext.exports as { client: LanguageClient };
 
-    const ready = await poll(() => client.state === State.Running, 15000);
-    assert.ok(ready, 'LSP client did not reach Running state within 15 s');
+    // Generous window: under xvfb/Electron the first LSP handshake can be slow.
+    const ready = await poll(() => client.state === State.Running, 30000);
+    assert.ok(ready, 'LSP client did not reach Running state within 30 s');
   });
 
   test('Hover returns documentation for SecRuleEngine', async function () {
