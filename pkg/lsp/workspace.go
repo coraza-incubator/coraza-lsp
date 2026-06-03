@@ -100,11 +100,13 @@ func matchesAny(path string, globs []string, root string) bool {
 	if len(globs) == 0 {
 		return false
 	}
-	rel, err := filepath.Rel(root, path)
-	if err != nil {
-		rel = path
-	}
-	rel = filepath.ToSlash(rel)
+	// Compute the slash-relative path without filepath.Rel: the VFS is
+	// slash-canonical (MemFS keys with "/") and on Windows the real walk yields
+	// backslash paths, so normalise both to slash and trim the root prefix.
+	// filepath.Rel mis-handles slash-rooted synthetic paths ("/policy/...") on
+	// Windows (it assumes OS semantics / a volume).
+	sroot := strings.TrimSuffix(filepath.ToSlash(root), "/")
+	rel := strings.TrimPrefix(filepath.ToSlash(path), sroot+"/")
 	base := filepath.ToSlash(filepath.Base(path))
 	for _, glob := range globs {
 		g := filepath.ToSlash(glob)

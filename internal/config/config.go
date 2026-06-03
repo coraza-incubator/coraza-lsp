@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -274,21 +275,25 @@ func Discover(start string) string {
 }
 
 // DiscoverFS walks from start up to the filesystem root looking for a
-// DefaultFilename. Returns the absolute path to the first one found, or ""
-// if none exists. start is resolved via filepath.Abs first (a no-op for paths
-// that are already absolute, including the synthetic roots embedders typically
-// pass to MemFS).
+// DefaultFilename. Returns the path to the first one found, or "" if none.
+//
+// Paths are handled SLASH-canonically (via path, not filepath): the VFS
+// abstraction is slash-based — an in-memory MemFS is keyed with "/" — and
+// os.* calls accept forward slashes on Windows too, so a single slash form
+// works for both the real-disk and in-memory implementations. Using filepath
+// here would prepend a drive letter to a synthetic root like "/policy" on
+// Windows (via filepath.Abs) and miss the slash-keyed MemFS entirely.
 func DiscoverFS(filesys vfs.FileSystem, start string) string {
-	dir, err := filepath.Abs(start)
-	if err != nil {
-		dir = start
+	if start == "" {
+		return ""
 	}
+	dir := path.Clean(filepath.ToSlash(start))
 	for {
-		candidate := filepath.Join(dir, DefaultFilename)
+		candidate := path.Join(dir, DefaultFilename)
 		if info, err := filesys.Stat(candidate); err == nil && !info.IsDir() {
 			return candidate
 		}
-		parent := filepath.Dir(dir)
+		parent := path.Dir(dir)
 		if parent == dir {
 			return ""
 		}
