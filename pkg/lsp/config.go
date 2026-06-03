@@ -28,6 +28,15 @@ type configState struct {
 	opts    analysis.Options
 	watcher *fsnotify.Watcher // nil until WatchConfig has been called
 	stop    chan struct{}     // closed to stop the watcher goroutine
+
+	// clientExtra* hold the custom-knowledge extras declared by the editor
+	// client via LSP initializationOptions (see handler.go). They are stored as
+	// normalized lookup sets (lowercased; operators have a leading '@' stripped)
+	// and UNIONed with the `.coraza.json`-derived extras in analysisOptions().
+	// Guarded by mu like the rest of configState.
+	clientExtraOperators       map[string]bool
+	clientExtraActions         map[string]bool
+	clientExtraTransformations map[string]bool
 }
 
 // LoadConfig discovers and loads `.coraza.json` for the given workspace root.
@@ -96,12 +105,58 @@ func (s *Server) configRoot() string {
 	return s.cfgState.root
 }
 
+// setClientExtra records the custom-knowledge extras declared by the editor
+// client (via LSP initializationOptions). The names are normalized into lookup
+// sets — operator names have a single leading '@' stripped, all are lowercased
+// — and stored under the config lock. These are UNIONed with the
+// `.coraza.json`-derived extras by analysisOptions(); they never mutate the
+// loaded config.
+func (s *Server) setClientExtra(operators, actions, transformations []string) {
+	ops := normalizedSet(operators, true)
+	acts := normalizedSet(actions, false)
+	tfs := normalizedSet(transformations, false)
+
+	s.cfgState.mu.Lock()
+	s.cfgState.clientExtraOperators = ops
+	s.cfgState.clientExtraActions = acts
+	s.cfgState.clientExtraTransformations = tfs
+	s.cfgState.mu.Unlock()
+}
+
 // analysisOptions returns the derived analysis.Options. Used on every
 // analyse call so severity overrides stay in sync with config edits.
+//
+// The Extra* knowledge sets returned are the UNION of the `.coraza.json`-derived
+// extras (cfgState.opts) and the client-declared extras (cfgState.clientExtra*).
+// The merge builds fresh maps so cfgState.opts' own maps are never mutated; an
+// empty union stays nil (a nil map indexes as false, which the analyser relies
+// on).
 func (s *Server) analysisOptions() analysis.Options {
 	s.cfgState.mu.RLock()
 	defer s.cfgState.mu.RUnlock()
-	return s.cfgState.opts
+
+	out := s.cfgState.opts
+	out.ExtraOperators = unionSets(s.cfgState.opts.ExtraOperators, s.cfgState.clientExtraOperators)
+	out.ExtraActions = unionSets(s.cfgState.opts.ExtraActions, s.cfgState.clientExtraActions)
+	out.ExtraTransformations = unionSets(s.cfgState.opts.ExtraTransformations, s.cfgState.clientExtraTransformations)
+	return out
+}
+
+// unionSets returns a fresh set containing every key present in a or b, leaving
+// the inputs untouched. Returns nil when both inputs are empty so the resulting
+// Options field stays nil.
+func unionSets(a, b map[string]bool) map[string]bool {
+	if len(a) == 0 && len(b) == 0 {
+		return nil
+	}
+	out := make(map[string]bool, len(a)+len(b))
+	for k := range a {
+		out[k] = true
+	}
+	for k := range b {
+		out[k] = true
+	}
+	return out
 }
 
 func optionsFromConfig(cfg config.Config) analysis.Options {

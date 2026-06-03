@@ -231,3 +231,129 @@ func TestUriToPath(t *testing.T) {
 		})
 	}
 }
+
+// --- client-declared extras (LSP initializationOptions) ---------------------
+
+// TestSetClientExtra_NormalizedIntoOptions verifies that extras declared by the
+// editor client are normalized (operator '@' stripped, all lowercased) and
+// surface through analysisOptions().
+func TestSetClientExtra_NormalizedIntoOptions(t *testing.T) {
+	t.Parallel()
+	s := newTestServer()
+
+	s.setClientExtra(
+		[]string{"@myOp"},
+		[]string{"MyAction"},
+		[]string{"MyTransform"},
+	)
+
+	opts := s.analysisOptions()
+	assert.True(t, opts.ExtraOperators["myop"], "operator '@myOp' should normalize to 'myop'")
+	assert.True(t, opts.ExtraActions["myaction"])
+	assert.True(t, opts.ExtraTransformations["mytransform"])
+}
+
+// TestAnalysisOptions_UnionsConfigAndClientExtras verifies that the extras from
+// `.coraza.json` and from the client are UNIONed, not replaced, and that the
+// merge does not mutate the loaded config's own maps.
+func TestAnalysisOptions_UnionsConfigAndClientExtras(t *testing.T) {
+	t.Parallel()
+	s := newTestServer()
+	dir := t.TempDir()
+	writeConfig(t, dir, `{
+		"extraOperators": ["@fromConfig"],
+		"extraActions": ["actFromConfig"],
+		"extraTransformations": ["tfFromConfig"]
+	}`)
+
+	var errs []string
+	s.LoadConfig(dir, func(msg string) { errs = append(errs, msg) })
+	assert.Empty(t, errs)
+
+	s.setClientExtra(
+		[]string{"@fromClient"},
+		[]string{"actFromClient"},
+		[]string{"tfFromClient"},
+	)
+
+	opts := s.analysisOptions()
+	// Operators: both config- and client-declared present.
+	assert.True(t, opts.ExtraOperators["fromconfig"])
+	assert.True(t, opts.ExtraOperators["fromclient"])
+	// Actions: union.
+	assert.True(t, opts.ExtraActions["actfromconfig"])
+	assert.True(t, opts.ExtraActions["actfromclient"])
+	// Transformations: union.
+	assert.True(t, opts.ExtraTransformations["tffromconfig"])
+	assert.True(t, opts.ExtraTransformations["tffromclient"])
+
+	// The union must not have mutated cfgState.opts' own maps.
+	s.cfgState.mu.RLock()
+	base := s.cfgState.opts.ExtraOperators
+	s.cfgState.mu.RUnlock()
+	assert.Equal(t, map[string]bool{"fromconfig": true}, base,
+		"config-derived ExtraOperators must not be mutated by the union")
+}
+
+// TestAnalysisOptions_NoExtrasStaysNil verifies an empty union leaves the
+// Extra* fields nil (so they index as false in the analyser).
+func TestAnalysisOptions_NoExtrasStaysNil(t *testing.T) {
+	t.Parallel()
+	s := newTestServer()
+	dir := t.TempDir()
+	s.LoadConfig(dir, nil)
+	s.setClientExtra(nil, nil, nil)
+
+	opts := s.analysisOptions()
+	assert.Nil(t, opts.ExtraOperators)
+	assert.Nil(t, opts.ExtraActions)
+	assert.Nil(t, opts.ExtraTransformations)
+}
+
+// TestStringSliceFromAny covers the JSON-decode helper used to parse
+// initializationOptions.
+func TestStringSliceFromAny(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, []string{"a", "b"}, stringSliceFromAny([]any{"a", "b"}))
+	// Non-string elements are filtered out.
+	assert.Equal(t, []string{"a"}, stringSliceFromAny([]any{"a", 1, true, nil}))
+	// An array with no strings yields nil.
+	assert.Nil(t, stringSliceFromAny([]any{1, 2}))
+	// Non-array inputs yield nil.
+	assert.Nil(t, stringSliceFromAny("not-an-array"))
+	assert.Nil(t, stringSliceFromAny(map[string]any{"x": "y"}))
+	assert.Nil(t, stringSliceFromAny(nil))
+}
+
+// TestParseClientExtras covers the initializationOptions object parser.
+func TestParseClientExtras(t *testing.T) {
+	t.Parallel()
+
+	// nil / wrong-typed InitializationOptions must be safe (no extras).
+	ops, acts, tfs := parseClientExtras(nil)
+	assert.Nil(t, ops)
+	assert.Nil(t, acts)
+	assert.Nil(t, tfs)
+
+	ops, acts, tfs = parseClientExtras("garbage")
+	assert.Nil(t, ops)
+	assert.Nil(t, acts)
+	assert.Nil(t, tfs)
+
+	// A well-formed object with all three keys.
+	ops, acts, tfs = parseClientExtras(map[string]any{
+		"extraOperators":       []any{"@myOp"},
+		"extraActions":         []any{"myAct"},
+		"extraTransformations": []any{"myTf"},
+	})
+	assert.Equal(t, []string{"@myOp"}, ops)
+	assert.Equal(t, []string{"myAct"}, acts)
+	assert.Equal(t, []string{"myTf"}, tfs)
+
+	// Missing keys yield nil for those.
+	ops, acts, tfs = parseClientExtras(map[string]any{"extraActions": []any{"only"}})
+	assert.Nil(t, ops)
+	assert.Equal(t, []string{"only"}, acts)
+	assert.Nil(t, tfs)
+}
