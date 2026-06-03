@@ -63,6 +63,16 @@ The extension needs the `coraza-lsp` binary on your `$PATH`. Options:
 |---|---|---|
 | `coraza-lsp.serverPath` | `coraza-lsp` | Path to the language-server binary. |
 | `coraza-lsp.trace.server` | `off` | LSP trace level (`off` / `messages` / `verbose`). |
+| `coraza-lsp.extraOperators` | `[]` | Extra operator names registered by Coraza / CRS plugins, treated as known so they aren't flagged unknown. Names may include a leading `@`. |
+| `coraza-lsp.extraActions` | `[]` | Extra action names registered by plugins, treated as known. |
+| `coraza-lsp.extraTransformations` | `[]` | Extra transformation names registered by plugins, treated as known. |
+
+The three `extra*` settings declare custom-knowledge names so the analyser
+does not report them as unknown. They **layer on top of** (are UNIONed with)
+the matching `extraOperators` / `extraActions` / `extraTransformations` fields
+in your workspace `.coraza.json` — declaring a name in either place is enough.
+Because these are passed to the server only at startup, the language server is
+**restarted automatically** when you change any of them.
 
 ## Multi-file rule sets
 

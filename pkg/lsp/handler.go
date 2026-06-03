@@ -223,6 +223,15 @@ func (s *Server) initialize(version string) protocol.InitializeFunc {
 			})
 		}
 		s.LoadConfig(root, showError)
+
+		// Layer the client-declared custom-knowledge extras on top of
+		// `.coraza.json`. params.InitializationOptions is `any`; we expect a
+		// JSON object with optional "extraOperators"/"extraActions"/
+		// "extraTransformations" string arrays. Anything missing or wrong-typed
+		// is ignored (no extras) — never a panic.
+		extraOps, extraActs, extraTfs := parseClientExtras(params.InitializationOptions)
+		s.setClientExtra(extraOps, extraActs, extraTfs)
+
 		if err := s.WatchConfig(s.onConfigChange, showError); err != nil {
 			showError(fmt.Sprintf("coraza-lsp: config watcher disabled: %v", err))
 		}
@@ -296,6 +305,38 @@ func workspaceRoot(params *protocol.InitializeParams) string {
 		return uriToPath(string(*params.RootURI))
 	}
 	return "."
+}
+
+// parseClientExtras pulls the custom-knowledge extras from the LSP
+// initializationOptions blob. The blob is `any`; only a map[string]any with
+// the three known keys (each a JSON string array) yields values. Missing,
+// nil, or wrong-typed input yields nil slices — callers treat that as "no
+// extras". Defensive by design: a hostile/garbled client must not panic.
+func parseClientExtras(v any) (operators, actions, transformations []string) {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return nil, nil, nil
+	}
+	return stringSliceFromAny(m["extraOperators"]),
+		stringSliceFromAny(m["extraActions"]),
+		stringSliceFromAny(m["extraTransformations"])
+}
+
+// stringSliceFromAny converts a JSON-decoded value into a []string. It returns
+// nil unless v is a []any; non-string elements are filtered out. A []any with
+// no strings yields nil.
+func stringSliceFromAny(v any) []string {
+	arr, ok := v.([]any)
+	if !ok {
+		return nil
+	}
+	var out []string
+	for _, e := range arr {
+		if s, ok := e.(string); ok {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 // uriToPath converts a file:// URI to an OS path (Windows drive letters and

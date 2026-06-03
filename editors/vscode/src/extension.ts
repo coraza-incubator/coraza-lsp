@@ -32,6 +32,15 @@ function createClient(): LanguageClient {
     synchronize: {
       fileEvents: vscode.workspace.createFileSystemWatcher('**/*.conf'),
     },
+    // Custom-knowledge extras passed to the server at initialize. The server
+    // UNIONs these with the extra* fields of `.coraza.json`. Because
+    // initializationOptions are only read once per session, activate() restarts
+    // the server when any of these settings change.
+    initializationOptions: {
+      extraOperators: config.get<string[]>('extraOperators') ?? [],
+      extraActions: config.get<string[]>('extraActions') ?? [],
+      extraTransformations: config.get<string[]>('extraTransformations') ?? [],
+    },
     outputChannel,
     traceOutputChannel,
   };
@@ -64,6 +73,18 @@ export function activate(context: vscode.ExtensionContext): { client: LanguageCl
     }),
 
     vscode.commands.registerCommand('coraza-lsp.gotoRule', gotoRuleById),
+
+    // initializationOptions (the extra* knowledge sets) are only read when the
+    // server starts, so restart it when any of those settings change.
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (
+        e.affectsConfiguration('coraza-lsp.extraOperators') ||
+        e.affectsConfiguration('coraza-lsp.extraActions') ||
+        e.affectsConfiguration('coraza-lsp.extraTransformations')
+      ) {
+        void vscode.commands.executeCommand('coraza-lsp.restartServer');
+      }
+    }),
   );
 
   return { client };

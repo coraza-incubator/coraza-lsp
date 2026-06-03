@@ -96,6 +96,30 @@
           ],
           "default": "off",
           "description": "Trace LSP communication between VS Code and the language server."
+        },
+        "coraza-lsp.extraOperators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "Extra operator names registered by Coraza / CRS plugins, treated as known so they aren't flagged as unknown. These are UNIONed with the `extraOperators` field of `.coraza.json`. Names may include a leading `@`. Changing this restarts the language server."
+        },
+        "coraza-lsp.extraActions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "Extra action names registered by Coraza / CRS plugins, treated as known so they aren't flagged as unknown. These are UNIONed with the `extraActions` field of `.coraza.json`. Changing this restarts the language server."
+        },
+        "coraza-lsp.extraTransformations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "Extra transformation names registered by Coraza / CRS plugins, treated as known so they aren't flagged as unknown. These are UNIONed with the `extraTransformations` field of `.coraza.json`. Changing this restarts the language server."
         }
       }
     }
